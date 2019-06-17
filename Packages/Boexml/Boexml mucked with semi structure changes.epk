@@ -1,0 +1,2117 @@
+
+' Boexml stuff for Dr. Barry Oken
+' Contact Roger Ellingson, Dan Zajdel, 503.297.5044, rogere@rmegen.net
+' unpublished copyright, 02/10/2003
+
+[Header]
+PackageName="Boexml"
+Description="Barry Oken xml Support lib"
+VersionMajor=5
+VersionMinor=0
+VersionInternal=0
+VersionRevision=0
+
+
+[Global]
+
+'''''''''Boexml.epk'''''''''''''''''''''''''
+
+'''''''Meta Data Data Definitions ''''''''''
+
+const Boexml_PackageName As String ="boexml.epk"
+const Boexml_PackageVersion As String ="5.0"
+const Boexml_PackageDate As String ="04/15/2005"
+const Boexml_PackageComments As String ="Boe Obj and Boe Meta Data Objs"
+
+const Boexml_XmlFileVersion As String ="1.0"
+const Boexml_XmlFileComments As String = ""
+
+Public g_Boexml_XmlVersion as Variant
+
+'''''''Attribute and Element Object Definitions and Subroutines'''''''''
+
+
+
+'''''''''Begin Boexml.epk global '''''''''''''''''''''''''
+
+
+
+
+Const g_Boexml_lngXMLOutFileNum = 1
+Const g_Boexml_lngScanOutFileNum = 2
+Const g_Boexml_lngEEGOutFileNum = 3
+
+
+Public g_Boexml_strResultSession(1 To 1) As String
+Public g_Boexml_strResultSamples(1 To 1) As String
+Public g_Boexml_strResultBlock(1 To 1) As String
+Public g_Boexml_strResultSample(1 To 1) As String
+
+Public g_Boexml_strData As String
+Public g_Boexml_intFile As Integer
+Public g_Boexml_strFilePath As String
+Public g_Boexml_intLevelSession As Integer
+
+Public g_Boexml_intLevelSubSession As Integer
+Public g_Boexml_intLevelSamples As Integer
+Public g_Boexml_intLevelSubSamples As Integer
+Public g_Boexml_intLevelBlock As Integer
+Public g_Boexml_intLevelSubBlock As Integer
+Public g_Boexml_intLevelSample As Integer
+Public g_Boexml_intLevelSubSample As Integer
+
+Public g_Boexml_intLevelBoeObj As Integer
+Public g_Boexml_intLevelSubBoeObj As Integer
+Public g_Boexml_boolLog As Boolean
+
+Public g_Boexml_intLevelBoeConfig As Integer
+Public g_Boexml_intLevelSubBoeConfig As Integer
+Public g_Boexml_intLevelBoeObjInfo As Integer
+Public g_Boexml_intLevelSubBoeObjInfo As Integer
+Public g_Boexml_intLevelTrigInfo As Integer
+Public g_Boexml_intLevelSubTrigInfo As Integer
+Public g_Boexml_intLevelDataObjInfo As Integer
+Public g_Boexml_intLevelSubDataObjInfo As Integer
+
+
+
+Declare Public Sub Boexml_LogStartTag(intLevel As Integer, strTag As String, _
+         strAttrib As String, boolCrLf As Boolean)
+Declare Public Sub Boexml_LogEndTag(intLevel As Integer, strTag As String, _
+          boolCrLf As Boolean)
+Declare Public Sub Boexml_LogItem(intLevel As Integer, strItem As String, _
+          boolCrLf As Boolean)
+Declare Public Sub Boexml_LogElement(intLevel As Integer, strTag As String, _
+         strAttrib As String, strInfo As String)
+
+
+Declare Public Sub Boexml_Flush()
+Declare Public Sub Boexml_Close()
+
+Declare Public Function Boexml_Open(strPath As String, Optional version as Variant) As Boolean
+
+Declare Public Function Boexml_currentOpen(strPath As String) As Boolean
+Declare Public Function Boexml_oldOpen(strPath As String) As Boolean
+
+Declare Public Sub Boexml_LogBoeObjInfo( intLevel As Integer, lngBoeObjNum as long)
+Declare Public Sub Boexml_LogBoeGenExpInfo( intLevel As Integer)
+Declare Public Sub Boexml_LogEprimeObjTimeInfo( intLevel As Integer, lngOnset as long, lngDelay as long, _ 
+               lngDur as long, lngDurErr as long, _
+               lngStart as long, lngOffset as long, lngFinish as long)
+
+Declare Public Sub Boexml_LogBoeObj( intLevel As Integer, lngBoeObjNum as long)
+Declare Public Sub Boexml_LogBoeConfig(intLevel As Integer)
+
+Declare Public Sub Boexml_LogBoeObjTextDisplay( intLevel As Integer, lngBoeObjNum as long, obj As TextDisplay)
+Declare Public Sub Boexml_LogBoeObjImageDisplay( intLevel As Integer, lngBoeObjNum as long, obj As ImageDisplay)
+Declare Public Sub Boexml_LogBoeObjFeedbackDisplay( intLevel As Integer, lngBoeObjNum as long, obj As FeedbackDisplay)
+Declare Public Sub Boexml_LogBoeObjSlideDisplay( intLevel As Integer, lngBoeObjNum as long, obj As Slide)
+Declare Public Sub Boexml_LogBoeObjCptSlideDisplay( intLevel As Integer, lngBoeObjNum as long, obj As CptSlide)
+
+Declare Public Sub Boexml_LogCalibration(intLevel As Integer)
+
+Declare Public Sub Boexml_LogScanPathEncodedData(intLevel As Integer)
+Declare Public Sub Boexml_LogScanPathTextData(intLevel As Integer, strData as string)
+Declare Public Sub Boexml_LogScanPathTextDataTextFile( intLevel as integer, strPath as string)
+
+Declare Public Sub Boexml_LogCptTrackingTextData(intLevel As Integer, strData as string)
+
+''''''''''''''''
+' Pre v4 routines kept for compatibility
+''''''''''''''''
+Declare Public Sub Boexml_LogCalInfo(intLevel As Integer)
+Declare Public Sub Boexml_LogTextDisplayTimeInfo(intLevel As Integer, obj As TextDisplay)
+Declare Public Sub Boexml_LogImageDisplayTimeInfo(intLevel As Integer, obj As ImageDisplay)
+Declare Public Sub Boexml_LogFeedbackDisplayTimeInfo(intLevel As Integer, obj As FeedbackDisplay)
+Declare Public Sub Boexml_LogSlideDisplayTimeInfo(intLevel As Integer, obj As Slide)
+Declare Public Sub Boexml_LogImageDisplayRespInfo(intLevel As Integer, obj As ImageDisplay)
+Declare Public Sub Boexml_LogTextDisplayRespInfo(intLevel As Integer, obj As TextDisplay)
+
+'Boe specific meta
+'Public g_Boe_PackageMetaElemObj as ElemObjType
+
+Declare Public sub Boexml_SetPackageMetaData()
+Declare Public sub Boexml_InitBoeMetaData()
+
+
+''''''''''''''End Boexml.epk global''''''''''''''''''''''''
+
+
+''''''''''''''''''''''''''''''''''''
+'Boexml Specific Code
+''''''''''''''''''''''''''''''''''''
+
+
+
+''''''''''''''''''''''''''''''''''''
+
+[Desc_Boexml_LogStartTag]
+OverView:
+    Log XML Starting tag
+
+Parameters:
+    intLevel as integer. XML level to log at.
+    strTag as string. XML tag.
+    boolCrLf as boolean. True=Log CrLf after tag.
+
+Remarks:
+    Does not modify input string.
+
+[PreSub_Boexml_LogStartTag]
+
+[Sub_Boexml_LogStartTag]
+
+Sub Boexml_LogStartTag(intLevel As Integer, strTag As String, _
+         strAttrib As String, boolCrLf As Boolean)
+    On Error GoTo Error_P
+
+    Dim strTemp As String
+    Dim i As Integer
+
+    strTemp = ""
+    For i = 1 To intLevel
+        strTemp = strTemp & Chr(9)
+    Next
+    strTemp = strTemp & "<" & strTag
+    If strAttrib <> "" Then
+        strTemp = strTemp & " " & strAttrib
+    End If
+    strTemp = strTemp & ">"
+    If boolCrLf Then
+        strTemp = strTemp & Chr(13) & Chr(10)
+    End If
+'   msgbox "BoexmlLogStartTag: " & strTemp & " " & CStr(g_Boexml_intFile) _
+    '        & " " & g_Boexml_strFilePath
+'   if g_Boexml_boolLog then
+'       Put g_Boexml_intFile, , strTemp
+'   end if
+    g_Boexml_strData = g_Boexml_strData & strTemp
+    
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogStartTag failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+''''''''''''''''''''''''''''''''''''
+[Desc_Boexml_LogEndTag]
+OverView:
+    Log XML ending tag.
+
+Parameters:
+    intLevel as integer. XML level to log at.
+    strTag as string. XML tag.
+    boolCrLf as boolean. True=Log CrLf after tag.
+
+Remarks:
+
+[PreSub_Boexml_LogEndTag]
+
+[Sub_Boexml_LogEndTag]
+
+Sub Boexml_LogEndTag(intLevel As Integer, strTag As String, _
+          boolCrLf As Boolean)
+    On Error GoTo Error_P
+
+    Dim strTemp As String
+    Dim i As Integer
+
+    strTemp = ""
+    For i = 1 To intLevel
+        strTemp = strTemp & Chr(9)
+    Next
+    strTemp = strTemp & "</" & strTag & ">"
+    If boolCrLf Then
+        strTemp = strTemp & Chr(13) & Chr(10)
+    End If
+'   if g_Boexml_boolLog then
+'       Put g_Boexml_intFile, , strTemp
+'   end if
+    g_Boexml_strData = g_Boexml_strData & strTemp
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogEndTag failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+''''''''''''''''''''''''''''''''''''
+[Desc_Boexml_LogItem]
+OverView:
+    None.
+
+
+Parameters:
+    intLevel as integer. XML level to log at.
+    strItem as string. XML item.
+    boolCrLf as boolean. True=Log CrLf after item.
+    
+Remarks:
+    None.
+
+[PreSub_Boexml_LogItem]
+
+[Sub_Boexml_LogItem]
+
+Sub Boexml_LogItem(intLevel As Integer, strItem As String, boolCrLf As Boolean)
+    On Error GoTo Error_P
+    
+    Dim strTemp As String
+    Dim i As Integer
+    
+    strTemp = ""
+    For i = 1 To intLevel
+        strTemp = strTemp & Chr(9)
+    Next
+    strTemp = strTemp & strItem
+    If boolCrLf Then
+        strTemp = strTemp & Chr(13) & Chr(10)
+    End If
+'   if g_Boexml_boolLog then
+'       Put g_Boexml_intFile, , strTemp
+'   end if
+
+    g_Boexml_strData = g_Boexml_strData & strTemp
+    
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogItem failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+''''''''''''''''''''''''''''''''''''
+[Desc_Boexml_LogElement]
+OverView:
+    None.
+
+Parameters:
+    intLevel as integer. XML level to log at.
+    strTag as string. XML tag.
+    strAttrib as string.  XML attributes of tag.
+    strInfo as string. XML info for tag.
+    
+Remarks:
+    None.
+
+[PreSub_Boexml_LogElement]
+
+[Sub_Boexml_LogElement]
+
+Sub Boexml_LogElement(intLevel As Integer, strTag As String, _
+         strAttrib As String, strInfo As String)
+    On Error GoTo Error_P
+    
+    Dim strTemp As String
+    Dim i As Integer
+    
+    strTemp = ""
+    
+    For i = 1 To intLevel
+        strTemp = strTemp & Chr(9)
+    Next
+    strTemp = strTemp & "<" & strTag
+    If strAttrib <> "" Then
+        strTemp = strTemp & " " & strAttrib
+    End If
+    strTemp = strTemp & ">"
+    strTemp = strTemp & strInfo
+    strTemp = strTemp & "</" & strTag & ">" & Chr(13) & Chr(10)
+
+'   if g_Boexml_boolLog then
+'       Put g_Boexml_intFile, , strTemp
+'   end if
+
+    g_Boexml_strData = g_Boexml_strData & strTemp
+    
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogElement failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+''''''''''''''''''''''''''''''''''''
+'Meta Data Related Code
+''''''''''''''''''''''''''''''''''''
+''''''''''''''''''''''''''''''''''''
+
+[Desc_Boexml_SetPackageMetaData]
+Overview:
+	
+Parameters:
+	
+
+Remarks:
+
+
+[PreSub_Boexml_SetPackageMetaData]
+
+[Sub_Boexml_SetPackageMetaData]
+
+Sub Boexml_SetPackageMetaData()
+    On Error Goto Error_P
+
+    Dim lngAttribItem as long, lngAttribTot as long
+    Dim lngElemItem as long
+
+    
+    g_Boe_PackageMetaElemObj.strName="PackageInfo"
+    g_Boe_PackageMetaElemObj.boolAttrib=true
+
+    lngAttribItem=1
+    g_Boe_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Name"
+    g_Boe_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boexml_PackageName
+
+    lngAttribItem= lngAttribItem + 1
+    g_Boe_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Version"
+    g_Boe_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boexml_PackageVersion
+
+    lngAttribItem = lngAttribItem + 1
+    g_Boe_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Date"
+    g_Boe_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boexml_PackageDate
+
+    lngAttribItem = lngAttribItem + 1
+    g_Boe_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Comments"
+    g_Boe_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boexml_PackageComments
+
+    lngAttribTot=lngAttribItem
+   
+    lngElemItem = g_Boe_lngBoeMetaElemObjN
+
+    Boe_SetElemObjItem lngAttribTot, g_Boe_PackageMetaElemObj, _
+                          g_Boe_arrBoeMetaElemObj(lngElemItem)
+
+    g_Boe_lngBoeMetaElemObjN = g_Boe_lngBoeMetaElemObjN + 1
+
+    
+
+Passed_P: 
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_SetPackageMetaData failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+
+End Sub
+
+
+
+''''''''''''''''''''''''''''''''''''
+
+[Desc_Boexml_SetXmlFileMetaData]
+Overview:
+	
+Parameters:
+	
+
+Remarks:
+
+
+[PreSub_Boexml_SetXmlFileMetaData]
+
+[Sub_Boexml_SetXmlFileMetaData]
+
+Sub Boexml_SetXmlFileMetaData(strpath as String)
+    On Error Goto Error_P
+
+    Dim lngAttribItem as long, lngAttribTot as long
+    Dim lngElemItem as long
+
+    
+    g_Boexml_XmlFileMetaElemObj.strName="XmlFileInfo"
+    g_Boexml_XmlFileMetaElemObj.boolAttrib=true
+
+
+   
+    lngAttribItem = 1
+    g_Boexml_XmlFileMetaElemObj.arrAttribObj(lngAttribItem).strID="Name"
+    g_Boexml_XmlFileMetaElemObj.arrAttribObj(lngAttribItem).strValue=strpath
+
+    lngAttribItem = lngAttribItem + 1
+    g_Boexml_XmlFileMetaElemObj.arrAttribObj(lngAttribItem).strID="Version"
+    g_Boexml_XmlFileMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boexml_XmlFileVersion
+    
+    lngAttribItem = lngAttribItem + 1
+    g_Boexml_XmlFileMetaElemObj.arrAttribObj(lngAttribItem).strID="Date"
+    g_Boexml_XmlFileMetaElemObj.arrAttribObj(lngAttribItem).strValue=CStr(Date$) 'Boexml_XmlFileDate
+
+    lngAttribItem = lngAttribItem + 1
+    g_Boexml_XmlFileMetaElemObj.arrAttribObj(lngAttribItem).strID="Comments"
+    g_Boexml_XmlFileMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boexml_XmlFileComments
+
+    lngAttribTot=lngAttribItem
+   
+    lngElemItem = g_Boexml_lngBoeMetaElemObjN  
+
+    Boexml_SetElemObjItem  lngAttribTot, g_Boexml_XmlFileMetaElemObj, _
+                           g_Boexml_arrBoeMetaElemObj(lngElemItem)
+
+    g_Boe_lngBoeMetaElemObjN = g_Boe_lngBoeMetaElemObjN + 1
+
+Passed_P: 
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_SetXmlFileMetaData failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+
+End Sub
+
+
+
+''''''''''''''''''''''''''''''''''''
+[Desc_Boexml_LogBoeMetaData]
+OverView:
+    Log the Boe Meta Data information.
+
+Parameters:
+    intLevelSubSession
+
+Remarks:
+    None.
+
+[PreSub_Boexml_LogBoeMetaData]
+
+[Sub_Boexml_LogBoeMetaData]
+
+Sub Boexml_LogBoeMetaData( intLevel As Integer)
+    On Error GoTo Error_P
+
+    Dim strTag As String
+
+    strTag = "BoeMetaData"
+    Boexml_LogStartTag intLevel, strTag, "", true
+
+    Boexml_LogArrBoeMetaElemObj intLevel+1 
+
+    Boexml_LogEndTag intLevel, strTag, true
+ Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogBoeMeta failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+
+''''''''''''''''''''''''''''''''''''
+[Desc_Boexml_LogArrBoeMetaElemObj]
+OverView:
+    Log the Boe Xml File Meta Data information.
+
+Parameters:
+    intLevelSubSession
+
+Remarks:
+    None.
+
+[PreSub_Boexml_LogArrBoeMetaElemObj]
+
+[Sub_Boexml_LogArrBoeMetaElemObj]
+
+Sub Boexml_LogArrBoeMetaElemObj( intLevel as integer)
+    On Error GoTo Error_P
+     
+     Dim lngItemLast as long, i as long
+     Dim lngTotItem as long, j as long
+     Dim strTmpName as string, strTmpID as string, strTmpValue as string
+     Dim boolTmpAttrib as boolean
+
+     g_Boe_str = " "
+     
+     
+     lngTotItem = g_Boexml_lngBoeMetaElemObjN  
+     
+     Debug.Print "g_Boexml_lngBoeMetaElemObjN " & g_Boexml_lngBoeMetaElemObjN
+
+     For j = 1 to (lngTotItem -1)
+         strTmpName = g_Boexml_arrBoeMetaElemObj(j).strName
+         boolTmpAttrib = g_Boexml_arrBoeMetaElemObj(j).boolAttrib
+
+         Debug.Print "Logging " & strTmpName
+         Debug.Print "Logging " & boolTmpAttrib
+
+         if boolTmpAttrib  then
+             lngItemLast=g_Boexml_BoeMetaAttribMax 'UBound(g_Boexml_arrBoeMetaElemObj(j).arrAttribObj)
+             
+             g_Boe_str  = " " 
+             For i= 1 to lngItemLast 
+                strTmpID = g_Boexml_arrBoeMetaElemObj(j).arrAttribObj(i).strID
+                strTmpValue = g_Boexml_arrBoeMetaElemObj(j).arrAttribObj(i).strValue
+              
+                Debug.Print "TmpID" & strTmpID
+                Debug.Print "TmpValue" & strTmpValue
+
+                g_Boe_str = g_Boe_str & " " &  _
+                            Boexml_MakeAttrib(strTmpID, strTmpValue)
+             Next
+         end if 
+        Boexml_LogElement intLevel, strTmpName, g_Boe_str, ""
+      Next
+
+ Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogArrBoeMetaData failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+
+
+''''''''''''''''''''''''''''''''''''
+[Desc_Boexml_LogBoeObjInfo]
+OverView:
+    Log BoeObj info.
+
+Parameters:
+    
+Remarks:
+    None.
+
+[PreSub_Boexml_LogBoeObjInfo]
+
+[Sub_Boexml_LogBoeObjInfo]
+
+Sub Boexml_LogBoeObjInfo( intLevel As Integer, lngBoeObjNum as long)
+    On Error GoTo Error_P
+    
+    Dim strTag As String, strAttrib As String
+
+    if g_Boe_BoeObj(lngBoeObjNum).strData1ID <> "" then
+        strAttrib = Boexml_MakeAttrib("DataObjID", g_Boe_BoeObj(lngBoeObjNum).strData1ID)
+        Boexml_LogElement intLevel+1, "DataObj", strAttrib, g_Boe_BoeObj(lngBoeObjNum).strData1Data
+    end if 
+    if g_Boe_BoeObj(lngBoeObjNum).strData2ID <> "" then
+        strAttrib = Boexml_MakeAttrib("DataObjID", g_Boe_BoeObj(lngBoeObjNum).strData2ID)
+        Boexml_LogElement intLevel+1, "DataObj", strAttrib, g_Boe_BoeObj(lngBoeObjNum).strData2Data
+    end if 
+    if g_Boe_BoeObj(lngBoeObjNum).strData3ID <> "" then
+        strAttrib = Boexml_MakeAttrib("DataObjID", g_Boe_BoeObj(lngBoeObjNum).strData3ID)
+        Boexml_LogElement intLevel+1, "DataObj", strAttrib, g_Boe_BoeObj(lngBoeObjNum).strData3Data
+    end if 
+    if g_Boe_BoeObj(lngBoeObjNum).strData4ID <> "" then
+        strAttrib = Boexml_MakeAttrib("DataObjID", g_Boe_BoeObj(lngBoeObjNum).strData4ID)
+        Boexml_LogElement intLevel+1, "DataObj", strAttrib, g_Boe_BoeObj(lngBoeObjNum).strData4Data 
+    end if 
+
+    'code if want to set DBLink at the BoeObj level, for now should always be yes.
+    'strTemp = iif( g_Boe_BoeObj(n).boolDBLink, "yes","no")
+    'strTemp = "yes"
+    'Boexml_LogElement intLevel+2, "DBLink", "", strTemp
+
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogBoeObjInfo failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+''''''''''''''''''''''''''''''''''''
+[Desc_Boexml_LogBoeGenExpInfo]
+OverView:
+    Log the general Boe experiment info.
+
+Parameters:
+    intLevelSubSession
+
+Remarks:
+    None.
+
+[PreSub_Boexml_LogBoeGenExpInfo]
+
+[Sub_Boexml_LogBoeGenExpInfo]
+
+Sub Boexml_LogBoeGenExpInfo( intLevel As Integer)
+    On Error GoTo Error_P
+
+    
+    Boexml_LogElement intLevel, "SessionID", "", _
+          g_Boe_strSessionID
+    Boexml_LogElement intLevel, "ExpID", "", _
+          g_Boe_strExperimentID
+    Boexml_LogElement intLevel, "SubjectID",  "", _
+	      g_Boe_strSubjectID
+    Boexml_LogElement intLevel, "TestID",  "", _
+	      g_Boe_strTestID
+    Boexml_LogElement intLevel, "Date",  "", _
+	      CStr(Date$)
+    Boexml_LogElement intLevel, "Time",  "", _
+	      CStr(Time$)
+    Boexml_LogElement intLevel, "RandomSeed",  "", _
+	      CStr(PRNG.GetSeed)
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogGenBoeExpInfo failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+
+''''''''''''''''''''''''''''''''''''
+[Desc_Boexml_LogEprimeObjTimeInfo]
+OverView:
+
+Parameters:
+
+Remarks:
+    None.
+
+[PreSub_Boexml_LogEprimeObjTimeInfo]
+
+[Sub_Boexml_LogEprimeObjTimeInfo]
+
+Sub Boexml_LogEprimeObjTimeInfo( intLevel As Integer, lngOnset as long, lngDelay as long, _ 
+               lngDur as long, lngDurErr as long, _
+               lngStart as long, lngOffset as long, lngFinish as long)
+    On Error GoTo Error_P
+    
+    Dim strTag As String, strAttrib As String
+
+    strAttrib = Boexml_MakeAttrib("Onset", CStr(lngOnset))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Delay", CStr(lngDelay))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Dur", CStr(lngDur))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("DurErr", CStr(lngDurErr))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Start", CStr(lngStart))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Offset", CStr(lngOffset))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Finish", CStr(lngFinish))
+    Boexml_LogElement intLevel, "TimeInfo", strAttrib, ""
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogEprimeObjTimeInfo failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+''''''''''''''''''''''''''''''''''''
+[Desc_Boexml_LogBoeObjTextDisplay]
+OverView:
+    Log TextDisplay info.
+
+Parameters:
+    intLevel as integer. XML level to log at.
+    obj as TextDisplay.
+    
+Remarks:
+    None.
+
+[PreSub_Boexml_LogBoeObjTextDisplay]
+
+[Sub_Boexml_LogBoeObjTextDisplay]
+
+Sub Boexml_LogBoeObjTextDisplay( intLevel As Integer, lngBoeObjNum as long, obj As TextDisplay)
+    On Error GoTo Error_P
+    
+    Dim strTag As String, strAttrib As String
+    
+    strTag = "BoeObj"
+
+    strAttrib = Boexml_MakeAttrib("BoeObjID", g_Boe_BoeObj(lngBoeObjNum).strID)
+    Boexml_LogStartTag intLevel, strTag, strAttrib, true
+
+    Boexml_LogBoeObjInfo intLevel, lngBoeObjNum 
+    Boexml_LogEprimeObjTimeInfo intLevel, obj.OnsetTime, obj.OnsetDelay, obj.Duration, _ 
+             obj.DurationError, obj.StartTime, obj.OffsetTime, obj.FinishTime 
+
+    
+    Boexml_LogEndTag intLevel, strTag, true
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogBoeTextDisplay failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+''''''''''''''''''''''''''''''''''''
+[Desc_Boexml_LogBoeObjImageDisplay]
+
+OverView:
+    Log ImageDisplay info.
+
+Parameters:
+    intLevel as integer. XML level to log at.
+    obj as ImageDisplay.
+    
+Remarks:
+    None.
+
+[PreSub_Boexml_LogBoeObjImageDisplay]
+
+[Sub_Boexml_LogBoeObjImageDisplay]
+
+
+Sub Boexml_LogBoeObjImageDisplay(intLevel As Integer, lngBoeObjNum as long, obj As ImageDisplay)
+    On Error GoTo Error_P
+    
+    Dim strTag As String, strAttrib As String
+
+    strTag = "BoeObj"
+
+    strAttrib = Boexml_MakeAttrib("BoeObjID", g_Boe_BoeObj(lngBoeObjNum).strID)
+    Boexml_LogStartTag intLevel, strTag, strAttrib, true
+
+    Boexml_LogEprimeObjTimeInfo intLevel, obj.OnsetTime, obj.OnsetDelay, obj.Duration, _ 
+             obj.DurationError, obj.StartTime, obj.OffsetTime, obj.FinishTime 
+
+    Boexml_LogBoeObjInfo intLevel, lngBoeObjNum
+    Boexml_LogEndTag intLevel, strTag, true
+    
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogBoeObjImageDisplay failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+''''''''''''''''''''''''''''''''''''
+[Desc_Boexml_LogBoeObjFeedbackDisplay]
+OverView:
+    Log FeedbackDisplay info.
+
+Parameters:
+    intLevel as integer. XML level to log at.
+    obj as FeedbackDisplay.
+    
+Remarks:
+    None.
+
+[PreSub_Boexml_LogBoeObjFeedbackDisplay]
+
+[Sub_Boexml_LogBoeObjFeedbackDisplay]
+
+Sub Boexml_LogBoeObjFeedbackDisplay(intLevel As Integer, lngBoeObjNum as long, obj As FeedbackDisplay)
+    On Error GoTo Error_P
+    
+
+    Dim strTag As String, strAttrib As String
+
+    strTag = "BoeObj"
+
+    strAttrib = Boexml_MakeAttrib("BoeObjID", g_Boe_BoeObj(lngBoeObjNum).strID)
+    Boexml_LogStartTag intLevel, strTag, strAttrib, true
+
+    Boexml_LogEprimeObjTimeInfo intLevel, obj.OnsetTime, obj.OnsetDelay, obj.Duration, _ 
+             obj.DurationError, obj.StartTime, obj.OffsetTime, obj.FinishTime 
+
+    Boexml_LogBoeObjInfo intLevel, lngBoeObjNum
+    Boexml_LogEndTag intLevel, strTag, true
+        
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogBoeObjFeedbackDisplay failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+''''''''''''''''''''''''''''''''''''
+
+[Desc_Boexml_LogBoeObjSlideDisplayInfo]
+OverView:
+    Log SlideDisplay info.
+
+Parameters:
+    intLevel as integer. XML level to log at.
+    obj as SlideDisplay.
+    
+Remarks:
+    None.
+
+[PreSub_Boexml_LogBoeObjSlideDisplayInfo]
+
+[Sub_Boexml_LogBoeObjSlideDisplayInfo]
+
+Sub Boexml_LogBoeObjSlideDisplayInfo(intLevel As Integer, lngBoeObjNum as long, obj As Slide)
+    On Error GoTo Error_P
+
+    Dim strTag As String, strAttrib As String
+
+    strTag = "BoeObj"
+
+    strAttrib = Boexml_MakeAttrib("BoeObjID", g_Boe_BoeObj(lngBoeObjNum).strID)
+    Boexml_LogStartTag intLevel, strTag, strAttrib, true
+
+    Boexml_LogEprimeObjTimeInfo intLevel, obj.OnsetTime, obj.OnsetDelay, obj.Duration, _ 
+             obj.DurationError, obj.StartTime, obj.OffsetTime, obj.FinishTime
+
+    Boexml_LogBoeObjInfo intLevel, lngBoeObjNum
+    Boexml_LogEndTag intLevel, strTag, true
+    
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogBoeObjSlideDisplayInfo failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+''''''''''''''''''''''''''''''''''''
+
+
+[Desc_Boexml_LogBoeObjCptSlideDisplayInfo]
+OverView:
+    Log CPT SlideDisplay info.
+
+Parameters:
+    intLevel as integer. XML level to log at.
+    obj as CptSlideDisplay.
+    
+Remarks:
+    None.
+
+[PreSub_Boexml_LogBoeObjCptSlideDisplayInfo]
+
+[Sub_Boexml_LogBoeObjCptSlideDisplayInfo]
+
+Sub Boexml_LogBoeObjCptSlideDisplayInfo(intLevel As Integer, lngBoeObjNum as long, obj As CptSlide)
+    On Error GoTo Error_P
+
+    Dim strTag As String, strAttrib As String
+
+    strTag = "BoeObj"
+
+    strAttrib = Boexml_MakeAttrib("BoeObjID", g_Boe_BoeObj(lngBoeObjNum).strID)
+    Boexml_LogStartTag intLevel, strTag, strAttrib, true
+
+    Boexml_LogEprimeObjTimeInfo intLevel, obj.OnsetTime, obj.OnsetDelay, obj.Duration, _ 
+             obj.DurationError, obj.StartTime, obj.OffsetTime, obj.FinishTime
+
+    Boexml_LogBoeObjInfo intLevel, lngBoeObjNum
+    Boexml_LogEndTag intLevel, strTag, true
+    
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogBoeObjCptSlideDisplayInfo failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+''''''''''''''''''''''''''''''''''''
+
+[Desc_Boexml_LogBoeObj]
+OverView:
+    Log only BoeObj info.
+
+Parameters:
+    intLevel as integer. XML level to log at.
+   
+    
+Remarks:
+    None.
+
+[PreSub_Boexml_LogBoeObj]
+
+[Sub_Boexml_LogBoeObj]
+
+Public Sub Boexml_LogBoeObj( intLevel As Integer,lngBoeObjNum as long)
+    On Error GoTo Error_P
+  
+    Dim strTag As String, strAttrib As String
+
+    strTag = "BoeObj"
+
+    strAttrib = Boexml_MakeAttrib("BoeObjID", g_Boe_BoeObj(lngBoeObjNum).strID)
+    Boexml_LogStartTag intLevel, strTag, strAttrib, true
+
+    Boexml_LogBoeObjInfo intLevel, lngBoeObjNum
+
+    Boexml_LogEndTag intLevel, strTag, true
+
+  
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogBoeObjfailed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+
+
+
+
+''''''''''''''''''''''''''''
+
+[Desc_Boexml_Flush]
+OverView:
+    Write the contents of g_Boexml_strData to disk.
+
+Parameters:
+    None.
+    
+Remarks:
+    None.
+
+[PreSub_Boexml_Flush]
+
+[Sub_Boexml_Flush]
+
+Sub Boexml_Flush()
+    On Error GoTo Error_P
+    
+    If g_Boexml_boolLog Then
+        If BoefileDLL_WriteOutFile(g_Boexml_lngXMLOutFileNum, g_Boexml_strData) _
+                   <> g_BOE_PASSED Then
+            GoTo Failed_P
+        End If
+        g_Boexml_strData = ""
+    End If
+    
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_Flush failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+''''''''''''''''''''''''''''''''''''
+
+[Desc_Boexml_LogCalibration]
+OverView:
+    Log the calibration info.
+
+Parameters:
+    intLevel as integer. XML level to log at.
+    
+Remarks:
+    None.
+
+[PreSub_Boexml_LogCalibration]
+
+[Sub_Boexml_LogCalibration]
+
+Sub Boexml_LogCalibration(intLevel As Integer)
+    On Error GoTo Error_P
+    
+    Dim strTag As String, strAttrib As String
+    
+    Boexml_LogStartTag intLevel, "Calibration", "", True
+    
+    strTag = "VRInterval"
+    strAttrib = Boexml_MakeAttrib("VRInterval", CStr(g_Boe_sngVRInterval))
+    Boexml_LogElement intLevel+1, strTag, strAttrib, ""
+    
+    strTag = "CalLeaderInfo"
+    strAttrib = ""
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("LevelCAL1", CStr(g_Boeni_dblLevelCAL(1)))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("IntervalCAL1", CStr(g_Boeni_lngIntervalCAL(1)))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("LevelCAL2", CStr(g_Boeni_dblLevelCAL(2)))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("IntervalCAL2", CStr(g_Boeni_lngIntervalCAL(2)))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("UpdateInterval", CStr(g_Boeni_dblUpdateInterval(1)))
+    Boexml_LogElement intLevel+1, strTag, strAttrib, ""
+    
+    Boexml_LogEndTag intLevel, "Calibration", True
+    Boexml_Flush
+    
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogCalibration failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+''''''''''''''''''''''''''''''''''''
+[Desc_Boexml_LogBoeConfig]
+OverView:
+    Log the calibration info.
+
+Parameters:
+    intLevel as integer. XML level to log at.
+    
+Remarks:
+    None.
+
+[PreSub_Boexml_LogBoeConfig]
+
+[Sub_Boexml_LogBoeConfig]
+
+Sub Boexml_LogBoeConfig(intLevel As Integer)
+    On Error GoTo Error_P
+    
+    Dim strTag As String, strAttrib As String, strTemp as string
+    dim n as integer
+
+    strAttrib =  Boexml_MakeAttrib("BoeConfigID", g_Boe_strExperimentID)
+    Boexml_LogStartTag intLevel, "BoeConfig", strAttrib, True
+    
+    strTag = "NumCatID"
+    Boexml_LogElement intLevel+1, strTag, "", CStr(g_Boe_lngNumCatID)
+    
+    
+    for n = 1 to g_Boe_lngMaxBoeObj
+       if g_Boe_BoeObj(n).strID <> "" then
+
+    		strAttrib =  Boexml_MakeAttrib("BoeObjID", g_Boe_BoeObj(n).strID)
+    		Boexml_LogStartTag intLevel+1, "BoeObjInfo", strAttrib, true
+    		Boexml_LogElement intLevel+2, "BoeObjTypeID", "", g_Boe_BoeObj(n).strTypeID
+
+    		Boexml_LogStartTag intLevel+2, "TrigInfo", "", true
+    		Boexml_LogElement intLevel+3, "TrigLevel", "", CStr(g_Boe_BoeObj(n).dblTrigLevel)
+    		Boexml_LogElement intLevel+3, "TrigWidth", "", CStr(g_Boe_BoeObj(n).dblTrigWidth)
+    		Boexml_LogEndTag intLevel+2, "TrigInfo", True
+
+		if g_Boe_BoeObj(n).strData1ID <> "" then
+    	          strAttrib =  Boexml_MakeAttrib("DataObjID", CStr(1))
+	          Boexml_LogElement intLevel+2, "DataObjInfo", strAttrib, g_Boe_BoeObj(n).strData1ID
+		end if
+		if g_Boe_BoeObj(n).strData2ID <> "" then
+    	          strAttrib =  Boexml_MakeAttrib("DataObjID", CStr(2))
+	          Boexml_LogElement intLevel+2, "DataObjInfo", strAttrib, g_Boe_BoeObj(n).strData2ID
+		end if
+		if g_Boe_BoeObj(n).strData3ID <> "" then
+    	          strAttrib =  Boexml_MakeAttrib("DataObjID", CStr(3))
+	          Boexml_LogElement intLevel+2, "DataObjInfo", strAttrib, g_Boe_BoeObj(n).strData3ID
+		end if
+            if g_Boe_BoeObj(n).strData4ID <> "" then
+    	          strAttrib =  Boexml_MakeAttrib("DataObjID", CStr(3))
+	          Boexml_LogElement intLevel+2, "DataObjInfo", strAttrib, g_Boe_BoeObj(n).strData4ID
+		end if
+
+            'For now the DBink should always be yes until users decide they want 
+            ' this feature turned on.
+
+		'strTemp = iif( g_Boe_BoeObj(n).boolDBLink, "yes","no")
+
+            strTemp = "yes"
+	      Boexml_LogElement intLevel+2, "DBLink", "", strTemp
+
+    		Boexml_LogEndTag intLevel+1, "BoeObjInfo", True
+	  end if
+    next
+
+    Boexml_LogEndTag intLevel, "BoeConfig", True
+    Boexml_Flush
+    
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogBoeConfig failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+''''''''''''''''''''''''''''
+
+[Desc_Boexml_LogCptTrackingTextData]
+OverView:
+    Log the CPT Tracking Text data.
+
+Parameters:
+    intLevel as integer. XML level to log at. strData to log
+    
+Remarks:
+    None.
+
+[PreSub_Boexml_LogCptTrackingTextData]
+
+[Sub_Boexml_LogCptTrackingTextData]
+
+Sub Boexml_LogCptTrackingTextData(intLevel As Integer, strData as string)
+    On Error GoTo Error_P
+    
+    Dim strTag As String, strAttrib As String, strTemp as string
+    Dim i As Integer
+    Dim dblNumScansPerSec as double, lngNumBytesPerScan as long
+    
+    Boexml_Flush
+
+    ' Write the current strings
+
+    strTag = "CptTrackingTextData"
+
+    Boescan_GetScanParams lngNumBytesPerScan, dblNumScansPerSec
+
+    strAttrib = Boexml_MakeAttrib("Encoding", "Ascii")
+    'strAttrib = strAttrib & " " & Boexml_MakeAttrib("NumScansPerSec", CStr(dblNumScansPerSec))
+
+    strTemp = ""
+    
+    For i = 1 To intLevel
+        strTemp = strTemp & Chr(9)
+    Next
+    strTemp = strTemp & "<" & strTag
+    If strAttrib <> "" Then
+        strTemp = strTemp & " " & strAttrib
+    End If
+    strTemp = strTemp & ">"
+    strTemp = strTemp & strData
+    strTemp = strTemp & "</" & strTag & ">" & Chr(13) & Chr(10)
+
+    If g_Boexml_boolLog Then
+        If BoefileDLL_WriteOutFile(g_Boexml_lngXMLOutFileNum, strTemp) <> g_BOE_PASSED Then
+            GoTo Failed_P
+        End If
+        g_Boexml_strData = ""
+    End If
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogScanPathTextData failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+''''''''''''''''''''''''''''
+
+[Desc_Boexml_LogScanPathTextData]
+OverView:
+    Log the ISCAN scanpath Text data.
+
+Parameters:
+    intLevel as integer. XML level to log at. strData to log
+    
+Remarks:
+    None.
+
+[PreSub_Boexml_LogScanPathTextData]
+
+[Sub_Boexml_LogScanPathTextData]
+
+Sub Boexml_LogScanPathTextData(intLevel As Integer, strData as string)
+    On Error GoTo Error_P
+    
+    Dim strTag As String, strAttrib As String, strTemp as string
+    Dim i As Integer
+    Dim dblNumScansPerSec as double, lngNumBytesPerScan as long
+    
+    Boexml_Flush
+
+    ' Write the current strings
+
+    strTag = "ScanPathTextData"
+
+    Boescan_GetScanParams lngNumBytesPerScan, dblNumScansPerSec
+
+    strAttrib = Boexml_MakeAttrib("Encoding", "Ascii")
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("NumScansPerSec", CStr(dblNumScansPerSec))
+
+    strTemp = ""
+    
+    For i = 1 To intLevel
+        strTemp = strTemp & Chr(9)
+    Next
+    strTemp = strTemp & "<" & strTag
+    If strAttrib <> "" Then
+        strTemp = strTemp & " " & strAttrib
+    End If
+    strTemp = strTemp & ">"
+    strTemp = strTemp & strData
+    strTemp = strTemp & "</" & strTag & ">" & Chr(13) & Chr(10)
+
+    If g_Boexml_boolLog Then
+        If BoefileDLL_WriteOutFile(g_Boexml_lngXMLOutFileNum, strTemp) <> g_BOE_PASSED Then
+            GoTo Failed_P
+        End If
+        g_Boexml_strData = ""
+    End If
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogScanPathTextData failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+''''''''''''''''''''''''''''''
+
+[Desc_Boexml_LogScanPathEncodedData]
+OverView:
+    Log the ISCAN scanpath encoded base64 data.
+
+Parameters:
+    intLevel as integer. XML level to log at.
+    
+Remarks:
+    None.
+
+[PreSub_Boexml_LogScanPathEncodedData]
+
+[Sub_Boexml_LogScanPathEncodedData]
+
+Sub Boexml_LogScanPathEncodedData(intLevel As Integer)
+    On Error GoTo Error_P
+    
+    Dim strTag As String, strAttrib As String
+    Dim strPre As String, strPost as string
+    Dim i As Integer
+    Dim lngBufPtr as long, lngNumBytes as long
+    Dim lngNumBytesPerScan as long
+    Dim dblNumScansPerSec as double
+    
+    Boexml_Flush
+
+    ' Write the current strings
+
+    strTag = "ScanPathEncodedData"
+
+    Boescan_GetScanParams lngNumBytesPerScan, dblNumScansPerSec
+
+    strAttrib = Boexml_MakeAttrib("Encoding", "Base64")
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("NumBytesPerScan", CStr(lngNumBytesPerScan))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("NumScansPerSec", CStr(dblNumScansPerSec))
+
+    strPre = ""
+    For i = 1 To intLevel
+        strPre = strPre & Chr(9)
+    Next
+    strPre = strPre & "<" & strTag
+    If strAttrib <> "" Then
+        strPre = strPre & " " & strAttrib
+    End If
+    strPre = strPre & ">"
+
+
+    strPost = ""
+    strPost = strPost & "</" & strTag & ">" & Chr(13) & Chr(10)
+
+    if BoescanDLL_GetEncodedData( lngBufPtr, lngNumBytes) <> g_BOE_PASSED then
+        goto Failed_P
+    end if
+
+    if lngBufPtr = 0 then
+        msgbox "Illegal encoded buffer ptr"
+        goto Failed_P
+    end if
+
+    if BoefileDLL_WriteOutFileTaggedBytes( g_Boexml_lngXMLOutFileNum, strPre, lngBufPtr, lngNumBytes, strPost) < 1 then
+        msgbox "No tagged bytes written"
+        goto Failed_P
+    end if
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogScanPathEncodedData failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+''''''''''''''''''''''''''''''
+
+[Desc_Boexml_LogScanpathTextDataFile ]
+OverView:
+    Log the ISCAN scanpath Text data into a file.
+    Log the reference into the xml file.
+
+Parameters:
+    intLevel as integer. XML level to log at.
+    
+Remarks:
+    None.
+
+[PreSub_Boexml_LogScanpathTextDataFile ]
+
+[Sub_Boexml_LogScanpathTextDataFile ]
+
+Sub Boexml_LogScanpathTextDataFile (intLevel As Integer, strTag as string, strTagFile as string, strPath as string)
+    On Error GoTo Error_P
+    
+    dim boolPassed as boolean
+    dim strTemp as string, strAttrib as string
+    dim lngNumBytesPerScan as long
+    dim dblNumScansPerSec as double
+    Dim i as integer
+    Dim lngBufPtr as long, lngNumBytes as long
+
+    boolPassed = true
+
+    Boexml_Flush
+
+    If BoefileDLL_OpenOutFile( g_Boexml_lngScanOutFileNum, strPath ) <> g_BOE_PASSED then
+        boolPassed = false
+    End If
+    
+    'msgbox "Opened: " & strPath
+
+    if boolPassed then
+        if BoescanDLL_GetTextData( lngBufPtr, lngNumBytes) <> g_BOE_PASSED then
+            goto Failed_P
+        end if
+
+       if lngBufPtr = 0 then
+           msgbox "Illegal text buffer ptr"
+           boolPassed = false
+       end if
+       if lngNumBytes < 2 then
+           msgbox "No bytes to write"
+           boolPassed = false
+       end if
+    end if
+
+   'msgbox "Bytes to write:" & cstr(lngNumBytes-1)
+
+    if boolPassed then
+       if BoefileDLL_WriteOutFileBytes( g_Boexml_lngScanOutFileNum, lngBufPtr, lngNumBytes-1) < 1 then
+           msgbox "No bytes written. Ptr:" & cstr(lngBufPtr) & " Bytes:" & cstr(lngNumBytes-1)
+           boolPassed = false
+       end if
+    end if
+
+    If BoefileDLL_CloseOutFile( g_Boexml_lngScanOutFileNum) <> g_BOE_PASSED then
+        boolPassed = false
+    End If
+
+   'msgbox "closed outfile"
+
+    ' Write the current strings
+
+    Boexml_LogStartTag intLevel, strTag, "", True
+
+    Boescan_GetScanParams lngNumBytesPerScan, dblNumScansPerSec
+
+    strAttrib = Boexml_MakeAttrib("Encoding", "Ascii")
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("NumScansPerSec", CStr(dblNumScansPerSec))
+    Boexml_LogElement intLevel+1, strTagFile, strAttrib, strPath
+
+    Boexml_LogEndTag intLevel, strTag, True
+
+    if not boolPassed then
+        goto Failed_P
+    end if
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogScanPathTextDataFile failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+''''''''''''''''''''''''''''''
+
+
+[Desc_Boexml_Open]
+OverView:
+    Open and Init the xml package.
+
+Parameters:
+    strPath as string. Pathname of xml datafile.
+    
+Remarks:
+    None.
+
+[PreSub_Boexml_Open]
+
+[Sub_Boexml_Open]
+
+Function Boexml_Open(strPath As String, Optional version as Variant) As Boolean
+    On Error GoTo Error_P
+    
+   Dim boolOpen as boolean
+
+    if Not IsMissing(version) then
+      if version < 4 then 
+        boolOpen = Boexml_oldOpen(strPath)
+      else
+        boolOpen = Boexml_currentOpen(strPath)
+      end if
+    else
+        boolOpen = Boexml_oldOpen(strPath)
+    end if 
+
+
+Passed_P:
+    if boolOpen <> True then
+      Boexml_Open = False
+      MsgBox "Boexml_Open failed: " & Error
+    else 
+      Boexml_Open = True
+    end if
+   
+    Exit Function
+Failed_P:
+
+    Boexml_Open = False
+
+    MsgBox "Boexml_Open failed: " & Error
+
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+''''''''''''''''''''''''''''''''''''
+
+
+[Desc_Boexml_currentOpen]
+OverView:
+    Open and Init the xml package.  Function contains code to handle Boexml.epk
+    version 4 and higher.
+
+Parameters:
+    strPath as string. Pathname of xml datafile.
+    
+Remarks:
+    None.
+
+[PreSub_Boexml_currentOpen]
+
+[Sub_Boexml_currentOpen]
+
+Function Boexml_currentOpen(strPath As String) As Boolean
+    On Error GoTo Error_P
+    
+    Dim lngRetVal As long
+    Dim strTemp as String, strAttrib As String
+    
+    g_Boexml_strResultSession(1) = "SessionResultEmpty"
+    g_Boexml_strResultSamples(1) = "SamplesResultEmpty"
+    g_Boexml_strResultBlock(1) = "BlockResult(1)Empty"
+    g_Boexml_strResultSample(1) = "SampleResult(1)Empty"
+    
+    g_Boexml_intLevelSession = 0
+    g_Boexml_intLevelSubSession = 1
+    g_Boexml_intLevelSamples = 1
+    g_Boexml_intLevelSubSamples = 2
+    g_Boexml_intLevelBlock = 2
+    g_Boexml_intLevelSubBlock = 3
+    g_Boexml_intLevelSample = 3
+    g_Boexml_intLevelSubSample = 4
+    g_Boexml_intLevelBoeObj = 4
+    g_Boexml_intLevelSubBoeObj = 5
+    
+
+    g_Boexml_intLevelBoeConfig = 1
+    g_Boexml_intLevelSubBoeConfig = 2
+    g_Boexml_intLevelBoeObjInfo = 2
+    g_Boexml_intLevelSubBoeObjInfo = 3
+    g_Boexml_intLevelTrigInfo = 3
+    g_Boexml_intLevelSubTrigInfo = 4
+    g_Boexml_intLevelDataObjInfo = 3
+
+    g_Boexml_strData = ""
+
+
+    lngRetVal = BoefileDLL_OpenOutFile(g_Boexml_lngXMLOutFileNum, strPath)
+
+
+    if lngRetVal <> g_BOE_PASSED Then
+        MsgBox "Could not open log file"
+        'goto Failed_P
+    End If
+
+    strTemp = "<?xml version='1.0'?>"
+    Boexml_LogItem g_Boexml_intLevelSession, strTemp, True
+    
+
+
+    strAttrib = Boexml_MakeAttrib("xmlns", "")
+    strTemp = "Session"
+    Boexml_LogStartTag g_Boexml_intLevelSession, strTemp, strAttrib, True
+
+  'Log XML Meta Information  
+    
+    Boexml_SetXmlFileMetaData strpath
+    Boexml_LogBoeMetaData g_Boexml_intLevelSubSession
+
+    'Boexml_LogElement g_Boexml_intLevelSubSession, "SessionID", "", _
+    '     g_Boe_strSessionID
+
+    'Boexml_LogElement g_Boexml_intLevelSubSession, "ExpID", "", _
+    '     g_Boe_strExperimentID
+
+Passed_P:
+    Boexml_currentOpen = True
+    Exit Function
+Failed_P:
+    Boexml_currentOpen = False
+    MsgBox "Boexml_Open failed: " & Error
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+'''''''''''''''''''
+
+[Desc_Boexml_Close]
+OverView:
+    Finish up the log file, flush, and close file
+
+Parameters:
+    None.
+    
+Remarks:
+    None.
+
+[PreSub_Boexml_Close]
+
+[Sub_Boexml_Close]
+
+Sub Boexml_Close()
+    On Error GoTo Error_P
+    
+    Boexml_LogEndTag g_Boexml_intLevelSession, "Session", True
+    Boexml_Flush
+    'put g_Boexml_intFile, , g_Boexml_strData
+    'close g_Boexml_intFile
+
+    If BoefileDLL_CloseOutFile(g_Boexml_lngXMLOutFileNum) <> g_BOE_PASSED Then
+        GoTo Failed_P
+    End If
+    
+    g_Boexml_intFile = -1
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_Close failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Pre version v4 routines
+'        Keep for compatibility
+'''''''''''''''''''''''''''''
+
+[Desc_Boexml_oldOpen]
+OverView:
+    Open and Init the xml package.
+
+Parameters:
+    strPath as string. Pathname of xml datafile.
+    
+Remarks:
+    None.
+
+[PreSub_Boexml_oldOpen]
+
+[Sub_Boexml_oldOpen]
+
+Function Boexml_oldOpen(strPath As String) As Boolean
+    On Error GoTo Error_P
+    
+    Dim lngRetVal As long
+    Dim strTemp As String
+    
+    g_Boexml_strResultSession(1) = "SessionResultEmpty"
+    g_Boexml_strResultSamples(1) = "SamplesResultEmpty"
+    g_Boexml_strResultBlock(1) = "BlockResult(1)Empty"
+    g_Boexml_strResultSample(1) = "SampleResult(1)Empty"
+  
+    g_Boexml_intLevelSession = 0
+    g_Boexml_intLevelSubSession = 1
+    g_Boexml_intLevelSamples = 1
+    g_Boexml_intLevelSubSamples = 2
+    g_Boexml_intLevelBlock = 2
+    g_Boexml_intLevelSubBlock = 3
+    g_Boexml_intLevelSample = 3
+    g_Boexml_intLevelSubSample = 4
+    g_Boexml_intLevelBoeObj = 4
+    g_Boexml_intLevelSubBoeObj = 5
+  
+    g_Boexml_strData = ""
+    lngRetVal = BoefileDLL_OpenOutFile(g_Boexml_lngXMLOutFileNum, strPath)
+
+    if lngRetVal <> g_BOE_PASSED Then
+        MsgBox "Could not open log file"
+        'goto Failed_P
+    End If
+
+    strTemp = "<?xml version='1.0'?>"
+    Boexml_LogItem g_Boexml_intLevelSession, strTemp, True
+
+    strTemp = "Session"
+    Boexml_LogStartTag g_Boexml_intLevelSession, strTemp, "", True
+
+    Boexml_LogElement g_Boexml_intLevelSubSession, "SessionID", "", _
+          g_Boe_strSessionID
+
+    Boexml_LogElement g_Boexml_intLevelSubSession, "ExpID", "", _
+          g_Boe_strExperimentID
+
+Passed_P:
+    Boexml_oldOpen = True
+    Exit Function
+Failed_P:
+    Boexml_oldOpen = False
+    MsgBox "Boexml_Open failed: " & Error
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+''''''''''''''''''''''''''''''''''''
+
+
+[Desc_Boexml_LogTextDisplayTimeInfo]
+OverView:
+    Log TextDisplay time info.
+
+Parameters:
+    intLevel as integer. XML level to log at.
+    obj as TextDisplay.
+    
+Remarks:
+    None.
+
+[PreSub_Boexml_LogTextDisplayTimeInfo]
+
+[Sub_Boexml_LogTextDisplayTimeInfo]
+
+Sub Boexml_LogTextDisplayTimeInfo(intLevel As Integer, obj As TextDisplay)
+    On Error GoTo Error_P
+    
+    Dim strTag As String, strAttrib As String
+    
+    If true then
+	  strTag = "BoeObjTimeInfo"
+        Boexml_LogStartTag intLevel, strTag, "", true
+    	  Boexml_LogElement intLevel+1, "OnsetTime", "", CStr(obj.OnsetTime)
+    	  Boexml_LogElement intLevel+1, "OnsetDelay", "", CStr(obj.OnsetDelay)
+    	  Boexml_LogElement intLevel+1, "Duration", "", CStr(obj.Duration)
+    	  Boexml_LogElement intLevel+1, "DurationError", "", CStr(obj.DurationError)
+    	  Boexml_LogElement intLevel+1, "StartTime", "", CStr(obj.StartTime)
+    	  Boexml_LogElement intLevel+1, "FinishTime", "", CStr(obj.FinishTime)
+        Boexml_LogEndTag intLevel, strTag, true
+    Else
+        strTag = "TimeInfo"
+        strAttrib = Boexml_MakeAttrib("OnsetTime", CStr(obj.OnsetTime))
+        strAttrib = strAttrib & " " & Boexml_MakeAttrib("OnsetDelay", CStr(obj.OnsetDelay))
+        strAttrib = strAttrib & " " & Boexml_MakeAttrib("Duration", CStr(obj.Duration))
+        strAttrib = strAttrib & " " & Boexml_MakeAttrib("DurationError", CStr(obj.DurationError))
+        strAttrib = strAttrib & " " & Boexml_MakeAttrib("StartTime", CStr(obj.StartTime))
+        strAttrib = strAttrib & " " & Boexml_MakeAttrib("OffsetTime", CStr(obj.OffsetTime))
+        strAttrib = strAttrib & " " & Boexml_MakeAttrib("FinishTime", CStr(obj.FinishTime))
+    	  Boexml_LogElement intLevel, strTag, strAttrib, ""
+    End If
+    
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogTextDisplayTimeInfo failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+''''''''''''''''''''''''''''''''''''
+
+[Desc_Boexml_LogImageDisplayTimeInfo]
+OverView:
+    Log ImageDisplay time info.
+
+Parameters:
+    intLevel as integer. XML level to log at.
+    obj as ImageDisplay.
+    
+Remarks:
+    None.
+
+[PreSub_Boexml_LogImageDisplayTimeInfo]
+
+[Sub_Boexml_LogImageDisplayTimeInfo]
+
+Sub Boexml_LogImageDisplayTimeInfo(intLevel As Integer, obj As ImageDisplay)
+    On Error GoTo Error_P
+    
+    Dim strTag As String, strAttrib As String
+    
+     If true then
+	  strTag = "BoeObjTimeInfo"
+        Boexml_LogStartTag intLevel, strTag, "", true
+    	  Boexml_LogElement intLevel+1, "OnsetTime", "", CStr(obj.OnsetTime)
+    	  Boexml_LogElement intLevel+1, "OnsetDelay", "", CStr(obj.OnsetDelay)
+    	  Boexml_LogElement intLevel+1, "Duration", "", CStr(obj.Duration)
+    	  Boexml_LogElement intLevel+1, "DurationError", "", CStr(obj.DurationError)
+    	  Boexml_LogElement intLevel+1, "StartTime", "", CStr(obj.StartTime)
+    	  Boexml_LogElement intLevel+1, "FinishTime", "", CStr(obj.FinishTime)
+        Boexml_LogEndTag intLevel, strTag, true
+    Else
+        strTag = "TimeInfo"
+        strAttrib = Boexml_MakeAttrib("OnsetTime", CStr(obj.OnsetTime))
+        strAttrib = strAttrib & " " & Boexml_MakeAttrib("OnsetDelay", CStr(obj.OnsetDelay))
+        strAttrib = strAttrib & " " & Boexml_MakeAttrib("Duration", CStr(obj.Duration))
+        strAttrib = strAttrib & " " & Boexml_MakeAttrib("DurationError", CStr(obj.DurationError))
+        strAttrib = strAttrib & " " & Boexml_MakeAttrib("StartTime", CStr(obj.StartTime))
+        strAttrib = strAttrib & " " & Boexml_MakeAttrib("OffsetTime", CStr(obj.OffsetTime))
+        strAttrib = strAttrib & " " & Boexml_MakeAttrib("FinishTime", CStr(obj.FinishTime))
+    	  Boexml_LogElement intLevel, strTag, strAttrib, ""
+    End If
+
+    
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogImageDisplayTimeInfo failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+''''''''''''''''''''''''''''''''''''
+[Desc_Boexml_LogFeedbackDisplayTimeInfo]
+OverView:
+    Log FeedbackDisplay time info.
+
+Parameters:
+    intLevel as integer. XML level to log at.
+    obj as FeedbackDisplay.
+    
+Remarks:
+    None.
+
+[PreSub_Boexml_LogFeedbackDisplayTimeInfo]
+
+[Sub_Boexml_LogFeedbackDisplayTimeInfo]
+
+Sub Boexml_LogFeedbackDisplayTimeInfo(intLevel As Integer, obj As FeedbackDisplay)
+    On Error GoTo Error_P
+    
+    Dim strTag As String, strAttrib As String
+    
+    If true then
+	  strTag = "BoeObjTimeInfo"
+        Boexml_LogStartTag intLevel, strTag, "", true
+    	  Boexml_LogElement intLevel+1, "OnsetTime", "", CStr(obj.OnsetTime)
+    	  Boexml_LogElement intLevel+1, "OnsetDelay", "", CStr(obj.OnsetDelay)
+    	  Boexml_LogElement intLevel+1, "Duration", "", CStr(obj.Duration)
+    	  Boexml_LogElement intLevel+1, "DurationError", "", CStr(obj.DurationError)
+    	  Boexml_LogElement intLevel+1, "StartTime", "", CStr(obj.StartTime)
+    	  Boexml_LogElement intLevel+1, "FinishTime", "", CStr(obj.FinishTime)
+        Boexml_LogEndTag intLevel, strTag, true
+    Else
+        strTag = "TimeInfo"
+        strAttrib = Boexml_MakeAttrib("OnsetTime", CStr(obj.OnsetTime))
+        strAttrib = strAttrib & " " & Boexml_MakeAttrib("OnsetDelay", CStr(obj.OnsetDelay))
+        strAttrib = strAttrib & " " & Boexml_MakeAttrib("Duration", CStr(obj.Duration))
+        strAttrib = strAttrib & " " & Boexml_MakeAttrib("DurationError", CStr(obj.DurationError))
+        strAttrib = strAttrib & " " & Boexml_MakeAttrib("StartTime", CStr(obj.StartTime))
+        strAttrib = strAttrib & " " & Boexml_MakeAttrib("OffsetTime", CStr(obj.OffsetTime))
+        strAttrib = strAttrib & " " & Boexml_MakeAttrib("FinishTime", CStr(obj.FinishTime))
+    	  Boexml_LogElement intLevel, strTag, strAttrib, ""
+    End If
+    
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogFeedbackDisplayTimeInfo failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+''''''''''''''''''''''''''''''''''''
+
+[Desc_Boexml_LogSlideDisplayTimeInfo]
+OverView:
+    Log SlideDisplay time info.
+
+Parameters:
+    intLevel as integer. XML level to log at.
+    obj as SlideDisplay.
+    
+Remarks:
+    None.
+
+[PreSub_Boexml_LogSlideDisplayTimeInfo]
+
+[Sub_Boexml_LogSlideDisplayTimeInfo]
+
+Sub Boexml_LogSlideDisplayTimeInfo(intLevel As Integer, obj As Slide)
+    On Error GoTo Error_P
+    
+    Dim strTag As String, strAttrib As String
+    
+    If true then
+	  strTag = "BoeObjTimeInfo"
+        Boexml_LogStartTag intLevel, strTag, "", true
+    	  Boexml_LogElement intLevel+1, "OnsetTime", "", CStr(obj.OnsetTime)
+    	  Boexml_LogElement intLevel+1, "OnsetDelay", "", CStr(obj.OnsetDelay)
+    	  Boexml_LogElement intLevel+1, "Duration", "", CStr(obj.Duration)
+    	  Boexml_LogElement intLevel+1, "DurationError", "", CStr(obj.DurationError)
+    	  Boexml_LogElement intLevel+1, "StartTime", "", CStr(obj.StartTime)
+    	  Boexml_LogElement intLevel+1, "FinishTime", "", CStr(obj.FinishTime)
+        Boexml_LogEndTag intLevel, strTag, true
+    Else
+        strTag = "TimeInfo"
+        strAttrib = Boexml_MakeAttrib("OnsetTime", CStr(obj.OnsetTime))
+        strAttrib = strAttrib & " " & Boexml_MakeAttrib("OnsetDelay", CStr(obj.OnsetDelay))
+        strAttrib = strAttrib & " " & Boexml_MakeAttrib("Duration", CStr(obj.Duration))
+        strAttrib = strAttrib & " " & Boexml_MakeAttrib("DurationError", CStr(obj.DurationError))
+        strAttrib = strAttrib & " " & Boexml_MakeAttrib("StartTime", CStr(obj.StartTime))
+        strAttrib = strAttrib & " " & Boexml_MakeAttrib("OffsetTime", CStr(obj.OffsetTime))
+        strAttrib = strAttrib & " " & Boexml_MakeAttrib("FinishTime", CStr(obj.FinishTime))
+    	  Boexml_LogElement intLevel, strTag, strAttrib, ""
+    End If
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogSlideDisplayTimeInfo failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+''''''''''''''''''''''''''''''''''''
+
+
+[Desc_Boexml_LogImageDisplayRespInfo]
+OverView:
+    Log ImageDisplay response info.
+
+Parameters:
+    intLevel as integer. XML level to log at.
+    obj as ImageDisplay.
+
+Remarks:
+    None.
+
+[PreSub_Boexml_LogImageDisplayRespInfo]
+
+[Sub_Boexml_LogImageDisplayRespInfo]
+
+Sub Boexml_LogImageDisplayRespInfo(intLevel As Integer, obj As ImageDisplay)
+    On Error GoTo Error_P
+    
+    Dim strTag As String, strAttrib As String
+    strTag = "RespInfo"
+    
+    strAttrib = Boexml_MakeAttrib("ACC", CStr(obj.ACC))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("RESP", CStr(obj.RESP))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("CRESP", CStr(obj.CRESP))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("RT", CStr(obj.RT))
+
+    Boexml_LogElement intLevel, strTag, strAttrib, ""
+    
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogImageDisplayRespInfo failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+''''''''''''''''''''''''''''''
+
+[Desc_Boexml_LogTextDisplayRespInfo]
+OverView:
+    Log TextDisplay response info.
+
+Parameters:
+    intLevel as integer. XML level to log at.
+    obj as TextDisplay.
+    
+Remarks:
+    None.
+
+[PreSub_Boexml_LogTextDisplayRespInfo]
+
+[Sub_Boexml_Boexml_LogTextDisplayRespInfo]
+
+Sub Boexml_LogTextDisplayRespInfo(intLevel As Integer, obj As TextDisplay)
+    On Error GoTo Error_P
+    
+    Dim strTag As String, strAttrib As String
+    
+    strTag = "RespInfo"
+    
+    strAttrib = Boexml_MakeAttrib("ACC", CStr(obj.ACC))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("RESP", CStr(obj.RESP))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("CRESP", CStr(obj.CRESP))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("RT", CStr(obj.RT))
+    Boexml_LogElement intLevel, strTag, strAttrib, ""
+    
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogTextDisplayRespInfo failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+''''''''''''''''''''''''''''
+[Desc_Boexml_LogCalInfo]
+OverView:
+    Log the calibration info.
+
+Parameters:
+    intLevel as integer. XML level to log at.
+    
+Remarks:
+    None.
+
+[PreSub_Boexml_LogCalInfo]
+
+[Sub_Boexml_LogCalInfo]
+
+Sub Boexml_LogCalInfo(intLevel As Integer)
+    On Error GoTo Error_P
+    
+    Dim strTag As String, strAttrib As String
+    
+    Boexml_LogStartTag intLevel, "Calibration", "", True
+    
+    strTag = "VRInterval"
+    strAttrib = Boexml_MakeAttrib("VRInterval", CStr(g_Boe_sngVRInterval))
+    Boexml_LogElement intLevel+1, strTag, strAttrib, ""
+    
+    strTag = "CalLeaderInfo"
+    strAttrib = ""
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("LevelCAL1", CStr(g_Boeni_dblLevelCAL(1)))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("IntervalCAL1", CStr(g_Boeni_lngIntervalCAL(1)))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("LevelCAL2", CStr(g_Boeni_dblLevelCAL(2)))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("IntervalCAL2", CStr(g_Boeni_lngIntervalCAL(2)))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("UpdateInterval", CStr(g_Boeni_dblUpdateInterval(1)))
+    Boexml_LogElement intLevel+1, strTag, strAttrib, ""
+    
+    strTag = "PRESTIMInfo"
+    strAttrib = ""
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Width", CStr(g_Boeni_dblWidthPRESTIM))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Level1", CStr(g_Boeni_dblLevelPRESTIM(1)))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Level2", CStr(g_Boeni_dblLevelPRESTIM(2)))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Level3", CStr(g_Boeni_dblLevelPRESTIM(3)))
+    Boexml_LogElement intLevel+1, strTag, strAttrib, ""
+    
+    strTag = "STIMInfo"
+    strAttrib = ""
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Width", CStr(g_Boeni_dblWidthSTIM))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Level1", CStr(g_Boeni_dblLevelSTIM(1)))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Level2", CStr(g_Boeni_dblLevelSTIM(2)))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Level3", CStr(g_Boeni_dblLevelSTIM(3)))
+    Boexml_LogElement intLevel+1, strTag, strAttrib, ""
+    
+    strTag = "POSTSTIMInfo"
+    strAttrib = ""
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Width", CStr(g_Boeni_dblWidthPOSTSTIM))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Level1", CStr(g_Boeni_dblLevelPOSTSTIM(1)))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Level2", CStr(g_Boeni_dblLevelPOSTSTIM(2)))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Level3", CStr(g_Boeni_dblLevelPOSTSTIM(3)))
+    Boexml_LogElement intLevel+1, strTag, strAttrib, ""
+    
+    strTag = "RESPInfo"
+    strAttrib = ""
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Width", CStr(g_Boeni_dblWidthRESP))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Level1", CStr(g_Boeni_dblLevelRESP(1)))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Level2", CStr(g_Boeni_dblLevelRESP(2)))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Level3", CStr(g_Boeni_dblLevelRESP(3)))
+    Boexml_LogElement intLevel+1, strTag, strAttrib, ""
+    
+    strTag = "CRESPInfo"
+    strAttrib = ""
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Width", CStr(g_Boeni_dblWidthCRESP))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Level1", CStr(g_Boeni_dblLevelCRESP(1)))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Level2", CStr(g_Boeni_dblLevelCRESP(2)))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Level3", CStr(g_Boeni_dblLevelCRESP(3)))
+    Boexml_LogElement intLevel+1, strTag, strAttrib, ""
+
+    strTag = "WINCRESPInfo"
+    strAttrib = ""
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Width", CStr(g_Boeni_dblWidthWINCRESP))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Level1", CStr(g_Boeni_dblLevelWINCRESP(1)))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Level2", CStr(g_Boeni_dblLevelWINCRESP(2)))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Level3", CStr(g_Boeni_dblLevelWINCRESP(3)))
+    Boexml_LogElement intLevel+1, strTag, strAttrib, ""
+  
+    strTag = "FBInfo"
+    strAttrib = ""
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Width", CStr(g_Boeni_dblWidthFB))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Level1", CStr(g_Boeni_dblLevelFB(1)))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Level2", CStr(g_Boeni_dblLevelFB(2)))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Level3", CStr(g_Boeni_dblLevelFB(3)))
+    Boexml_LogElement intLevel+1, strTag, strAttrib, ""
+    
+    strTag = "JUMPInfo"
+    strAttrib = ""
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Width", CStr(g_Boeni_dblWidthJUMP))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Level1", CStr(g_Boeni_dblLevelJUMP(1)))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Level2", CStr(g_Boeni_dblLevelJUMP(2)))
+    strAttrib = strAttrib & " " & Boexml_MakeAttrib("Level3", CStr(g_Boeni_dblLevelJUMP(3)))
+    Boexml_LogElement intLevel+1, strTag, strAttrib, ""
+    
+    Boexml_LogEndTag intLevel, "Calibration", True
+    Boexml_Flush
+    
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boexml_LogImageDisplayRespInfo failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+''''''''''''''''''''''''''''
+
+[InitPackages]
+
+
+[UnInitPackages]
+
+
+[Info_Boexml]
+
+
+

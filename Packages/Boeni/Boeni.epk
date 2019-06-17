@@ -1,0 +1,552 @@
+
+' Boeni stuff for Dr. Barry Oken
+' Contact Roger Ellingson, Dan Zajdel, 503.297.5044, rogere@rmegen.net
+' unpublished copyright, 2/24/2003
+
+[Header]
+PackageName="Boeni"
+Description="Barry Oken NI Support lib"
+VersionMajor=5
+VersionMinor=0
+VersionInternal=0
+VersionRevision=1
+
+[Global]
+'''''''''''''Boeni.epk''''''''''''''''''''''''''
+
+'''''''Meta Data Data Definitions ''''''''
+
+const Boeni_PackageName As String ="boeni.epk"
+const Boeni_PackageVersion As String ="5.0"
+const Boeni_PackageDate As String ="04/11/2005"
+const Boeni_PackageComments As String ="Boe Obj and Boe Meta Data"
+'''''''''''''''''''''''''''''''''''''''''''
+
+'Boe specific meta
+Public g_Boeni_PackageMetaElemObj as ElemObjType
+Declare Public sub Boeni_SetPackageMetaData()
+''''''''''''''''''''''''''''''''''''''''''''
+
+''''''Begin Boeni.epk global''''''''''''''''''''''''''
+Declare Function FindWindow Lib "user32" Alias "FindWindowA" _
+    (ByVal lpClassName As Any, ByVal lpWindowName As Any) As Long
+
+'Declare Function WriteOutFile Lib "Boeni.dll" (ByVal lpszText As String) As Long
+'Declare Function OpenOutFile Lib "Boeni.dll" (ByVal lpszPath As String) As Long
+'Declare Function CloseOutFile Lib "Boeni.dll" () As Long
+'Declare Function ReadOutFile Lib "Boeni.dll" (ByVal bstr As String) As String
+
+Declare Function BoeniDLL_DACWriteLE Lib _
+    "Boeni.dll" (ByVal lngDAC As Long, ByVal dblVal As Double) As Long
+Declare Function BoeniDLL_DACGASNLE Lib _
+    "Boeni.dll"  (ByVal lngDAC As Long, ByVal lngVal As Long) As Long
+
+Declare Function BoeniDLL_DACPulseLE Lib _
+    "Boeni.dll" (ByVal lngDAC As Long, ByVal dblWidth As Double, _
+           ByVal dblLevel As Double) As Long
+
+Declare Function BoeniDLL_CTRPulse Lib _
+    "Boeni.dll" (ByVal lngCTR As Long, ByVal lngPolarity As Long, _
+          ByVal dblDelay As Double, ByVal dblWidth As Double) As Long
+Declare Function BoeniDLL_GetLimitsLE Lib _
+    "Boeni.dll" (ByVal lngDAC As Long, dblLowerLimit As Double, _
+           dblUpperLimit As Double, dblUpdateInterval As Double) As Long
+Declare Function BoeniDLL_OpenBoard Lib _
+    "Boeni.dll" (ByVal lngHandle As Long) As Long
+Declare Function BoeniDLL_CloseBoard Lib _
+    "Boeni.dll" () As Long
+
+Public m_Boeni_boolNIOK As Boolean  ' True=NI board is OK
+
+Const g_BOENI_DAC_BUSY = -3 ' dac busy
+Const g_BOENI_ERROR_RANGE = -2 ' dac val out of range
+
+Public g_Boeni_handle As Long
+Public g_Boeni_lngDAC0 As Long
+Public g_Boeni_lngDAC1 As Long
+Public g_Boeni_lngCTR0 As Long
+Public g_Boeni_lngCTR1 As Long
+Public g_Boeni_dblLowerLimit(0 To 1) As Double
+Public g_Boeni_dblUpperLimit(0 To 1) As Double
+Public g_Boeni_dblUpdateInterval(0 To 1) As Double
+Public g_Boeni_lngPos As Long
+Public g_Boeni_lngNeg As Long
+Public g_Boeni_lngIntervalCAL(1 To 2) As Long
+Public g_Boeni_dblLevelCAL(1 To 2) As Double
+Public g_Boeni_dblWidthPRESTIM As Double
+Public g_Boeni_dblLevelPRESTIM(1 To 3) As Double
+Public g_Boeni_dblWidthSTIM As Double
+Public g_Boeni_dblLevelSTIM(1 To 3) As Double
+Public g_Boeni_dblWidthPOSTSTIM As Double
+Public g_Boeni_dblLevelPOSTSTIM(1 To 3) As Double
+Public g_Boeni_dblWidthRESP As Double
+Public g_Boeni_dblLevelRESP(1 To 3) As Double
+Public g_Boeni_dblWidthWINRESP As Double
+Public g_Boeni_dblLevelWINRESP(1 To 3) As Double
+Public g_Boeni_dblWidthCRESP As Double
+Public g_Boeni_dblLevelCRESP(1 To 3) As Double
+Public g_Boeni_dblWidthWINCRESP As Double
+Public g_Boeni_dblLevelWINCRESP(1 To 3) As Double
+Public g_Boeni_dblWidthFB As Double
+Public g_Boeni_dblLevelFB(1 To 3) As Double
+Public g_Boeni_dblWidthJUMP As Double
+Public g_Boeni_dblLevelJUMP(1 To 3) As Double
+
+Declare Public Function Boeni_Open() as boolean
+Declare Public Function Boeni_Close() as boolean
+Declare Public Sub Boeni_DACWrite( lngDAC as long, dblLevel as double)
+Declare public Sub Boeni_StartDataAcq()
+Declare Public Sub Boeni_DACPulse( lngDAC as long, dblWidth as double, dblLevel as double, boolWait as boolean)
+
+'Version 4 XML w/ new BoeObj definition
+Declare Public Sub Boeni_BoeObjDACPulse( lngDAC as long, lngBoeObjNum as Long, boolWait as boolean)
+
+Declare Public Sub Boeni_CTRPulse( lngCTR as long, lngPolarity as long, dblDelay as double, dblWidth as double)
+ 
+'''''''' end Boeni.epk global ''''''''''''''''''''''''
+
+''''''''''''''''''''''''''''''''''''
+'Meta Data Related Code
+''''''''''''''''''''''''''''''''''''
+
+[Desc_Boeni_SetPackageMetaData]
+Overview:
+	
+Parameters:
+
+Remarks:
+
+[Sub_Boeni_SetPackageMetaData]
+Sub Boeni_SetPackageMetaData()
+    On Error Goto Error_P
+
+    Dim lngAttribItem as long, lngAttribTot as long
+    Dim lngElemItem as long
+    
+    g_Boeni_PackageMetaElemObj.strName="PackageInfo"
+    g_Boeni_PackageMetaElemObj.boolAttrib=true
+
+    lngAttribItem=1
+    g_Boeni_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Name"
+    g_Boeni_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boeni_PackageName
+
+    lngAttribItem= lngAttribItem + 1
+    g_Boeni_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Version"
+    g_Boeni_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boeni_PackageVersion
+
+    lngAttribItem = lngAttribItem + 1
+    g_Boeni_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Date"
+    g_Boeni_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boeni_PackageDate
+
+    lngAttribItem = lngAttribItem + 1
+    g_Boeni_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Comments"
+    g_Boeni_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boeni_PackageComments
+
+    lngAttribTot=lngAttribItem
+   
+    lngElemItem = g_Boexml_lngBoeMetaElemObjN
+
+    Boexml_SetElemObjItem lngAttribTot, g_Boeni_PackageMetaElemObj, _
+                          g_Boexml_arrBoeMetaElemObj(lngElemItem)
+
+    g_Boexml_lngBoeMetaElemObjN = g_Boexml_lngBoeMetaElemObjN + 1
+
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boeni_SetPackageMetaData failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+'''''''''''''''''''''''''''''''''
+
+''''''''''''''''''''''''''''''''''''
+'Boeni Specific Code
+''''''''''''''''''''''''''''''''''''
+
+[Desc_Boeni_Open]
+OverView:
+    Open the driver.
+Parameters:
+    None.
+Remarks:
+    None
+
+[Sub_Boeni_Open]
+Public Function Boeni_Open() As Boolean
+    On Error GoTo Error_P
+
+    Dim strCaption As String
+
+    m_Boeni_boolNIOK = False
+
+    g_Boeni_handle = 0
+
+    strCaption = "E-Run Experiment Window"
+    'strCaption = Experiment.Name & ".es" & " - E-Studio"
+
+    If g_Boeni_handle = 0 Then
+        g_Boeni_handle = FindWindow(0&, strCaption)
+    End If
+
+   'msgbox "After findwindow : strCaption:[" & strCaption & "] g_handle =" & g_Boeni_handle
+    If g_Boeni_handle = 0 Then
+        MsgBox "Cannot find window for E-Studio"
+        GoTo Failed_P
+    End If
+
+    If BoeniDLL_OpenBoard(g_Boeni_handle) <> g_BOE_PASSED Then
+        GoTo Failed_P
+    End If
+
+    g_Boeni_dblWidthPRESTIM = 10#
+    g_Boeni_dblLevelPRESTIM(1) = 0.6
+    g_Boeni_dblLevelPRESTIM(2) = 0.75
+    g_Boeni_dblLevelPRESTIM(3) = 0.9
+    g_Boeni_dblWidthSTIM = 10#
+    g_Boeni_dblLevelSTIM(1) = 1.1
+    g_Boeni_dblLevelSTIM(2) = 1.25
+    g_Boeni_dblLevelSTIM(3) = 1.4
+    g_Boeni_dblWidthPOSTSTIM = 10#
+    g_Boeni_dblLevelPOSTSTIM(1) = 1.6
+    g_Boeni_dblLevelPOSTSTIM(2) = 1.75
+    g_Boeni_dblLevelPOSTSTIM(3) = 1.9
+    g_Boeni_dblWidthRESP = 20#
+    g_Boeni_dblLevelRESP(1) = -2.1
+    g_Boeni_dblLevelRESP(2) = -2.2
+    g_Boeni_dblLevelRESP(3) = -2.3
+    g_Boeni_dblWidthWINRESP = 10#
+    g_Boeni_dblLevelWINRESP(1) = 0
+    g_Boeni_dblLevelWINRESP(2) = 0
+    g_Boeni_dblLevelWINRESP(3) = 0
+    g_Boeni_dblWidthCRESP = 20#
+    g_Boeni_dblLevelCRESP(1) = 2.1
+    g_Boeni_dblLevelCRESP(2) = 2.2
+    g_Boeni_dblLevelCRESP(3) = 2.3
+    g_Boeni_dblWidthWINCRESP = 10#
+    g_Boeni_dblLevelWINCRESP(1) = 0
+    g_Boeni_dblLevelWINCRESP(2) = 0
+    g_Boeni_dblLevelWINCRESP(3) = 0
+    g_Boeni_dblWidthFB = 10#
+    g_Boeni_dblLevelFB(1) = 0
+    g_Boeni_dblLevelFB(2) = 0
+    g_Boeni_dblLevelFB(3) = 0
+    g_Boeni_dblWidthJUMP = 15#
+    g_Boeni_dblLevelJUMP(1) = 0
+    g_Boeni_dblLevelJUMP(2) = 0
+    g_Boeni_dblLevelJUMP(3) = 0
+    g_Boeni_lngDAC0 = 0
+    g_Boeni_lngDAC1 = 1
+    g_Boeni_lngCTR0 = 0
+    g_Boeni_lngCTR1 = 1
+    g_Boeni_dblLevelCAL(1) = 2.5
+    g_Boeni_dblLevelCAL(2) = -2.5
+    g_Boeni_lngIntervalCAL(1) = 100
+    g_Boeni_lngIntervalCAL(2) = 100 'changed from 200 02/21/2003
+    g_Boeni_lngPos = 1
+    g_Boeni_lngNeg = 0
+
+    If BoeniDLL_GetLimitsLE(g_Boeni_lngDAC0, g_Boeni_dblLowerLimit(1), g_Boeni_dblUpperLimit(1), _
+           g_Boeni_dblUpdateInterval(1)) <> g_BOE_PASSED Then
+        MsgBox "GetLimits DAC0 failed"
+        GoTo Error_P
+    End If
+    'g_Boeni_dblUpdateInterval(1) = g_Boeni_dblUpdateInterval(1) * 1000.0
+
+    Boe_DebugMsg "Trigger generator (Boeni) opened successfully." & ebcrlf & _
+       "DAC0 UpperLimit:" & Format(g_Boeni_dblUpperLimit(1), "0.000") & ebcrlf & _
+         "DAC0 LowerLimit:" & Format(g_Boeni_dblLowerLimit(1), "0.000") & ebcrlf & _
+         "DAC0 UpdateInterval:" & Format(g_Boeni_dblUpdateInterval(1), "0.00") & "ms"
+Passed_P:
+    m_Boeni_boolNIOK = True
+    Boeni_Open = True
+    Exit Function
+Failed_P:
+    Boeni_Open = False
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+'''''''''''''''''''''''''''''''''''''''''''''
+
+[Desc_Boeni_Close]
+OverView:
+    Closes the driver.
+Parameters:
+    None.
+Remarks:
+    None
+
+[Sub_Boeni_Close]
+Public Function Boeni_Close() As Boolean
+    On Error GoTo Error_P
+
+    If Not m_Boeni_boolNIOK Then
+        GoTo Passed_P
+    End If
+
+    If BoeniDLL_CloseBoard() <> g_BOE_PASSED Then
+        GoTo Failed_P
+    End If
+
+    g_Boeni_handle = 0
+    m_Boeni_boolNIOK = False
+
+Passed_P:
+    Boeni_Close = True
+    Exit Function
+Failed_P:
+    MsgBox "Boeni_Close failed"
+    Boeni_Close = False
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+'''''''''''''''''''''''''''''''''
+
+[Desc_Boeni_DACWrite]
+OverView:
+    Output voltage level at DAC output.
+Parameters:
+    lngDAC As Long
+    dblLevel As Double
+Remarks:
+    DAC = 0 Or 1#
+    Level = -10.00 to 9.997.
+
+[Sub_Boeni_DACWrite]
+Sub Boeni_DACWrite(lngDAC As Long, dblLevel As Double)
+    On Error GoTo Error_P
+
+    If Not m_Boeni_boolNIOK Then
+        GoTo Passed_P
+    End If
+
+    If BoeniDLL_DACWriteLE(lngDAC, dblLevel) <> g_BOE_PASSED Then
+        GoTo Failed_P
+    End If
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boeni_DACWrite failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+'''''''''''''''''''''''''''''''''''''''
+
+[Desc_Boeni_StartDataAcq]
+OverView:
+    Initialize info and prompt the oper to start Data Acq machine.
+Parameters:
+    None.
+Remarks:
+    None.
+
+[Sub_Boeni_StartDataAcq]
+Sub Boeni_StartDataAcq()
+    On Error GoTo Error_P
+
+    If Not m_Boeni_boolNIOK Then
+        GoTo Passed_P
+    End If
+    MsgBox "Please start Data Acq machine now"
+    Boeni_DACWrite g_Boeni_lngDAC0, 0#
+    Sleep 20                              'g_Boeni_lngIntervalCAL(1) / 2)
+    Boeni_DACWrite g_Boeni_lngDAC0, g_Boeni_dblLevelCAL(1)
+    Sleep (g_Boeni_lngIntervalCAL(1))     '(g_Boeni_lngIntervalCAL(1) / 2)
+    Boeni_DACWrite g_Boeni_lngDAC0, 0#
+    Sleep 20		
+    Boeni_DACWrite g_Boeni_lngDAC0, g_Boeni_dblLevelCAL(2)
+    Sleep (g_Boeni_lngIntervalCAL(2))
+    Boeni_DACWrite g_Boeni_lngDAC0, 0#
+    Sleep 20                              '(g_Boeni_lngIntervalCAL(2) / 2)
+    
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boeni_StartDataAcq failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+'''''''''''''''''''''''''''''''''''''''
+
+[Desc_Boeni_GASN]
+OverView:
+    Increment GASN and output level encoded signal
+Parameters:
+    None.
+Remarks:
+    None.
+
+[Sub_Boeni_GASN]
+Sub Boeni_GASN()
+    On Error GoTo Error_P
+
+    If Not m_Boeni_boolNIOK Then
+        GoTo Passed_P
+    End If
+
+    If BoeniDLL_DACGASNLE(g_Boeni_lngDAC0, GASN) <> g_BOE_PASSED Then
+        GoTo Failed_P
+    End If
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boeni_GASN failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+''''''''''''''''''''''''''''''''''
+
+[Desc_Boeni_BoeObjDACPulse]
+OverView:
+    Ouput a voltage pulse on requested DAC.
+Parameters:
+    lngDAC As Long
+    dblWidth As Double
+    dblLevel As Double
+    boolWait As Boolean
+Remarks:
+    DAC = 0 Or 1
+    Width = pulse width in ms.
+    Level = amplitude level of pulse in volts.
+    Wait = true: wait for completion of pulse
+             false: return immediately
+
+[Sub_Boeni_BoeObjDACPulse]
+Sub Boeni_BoeObjDACPulse(lngDAC As Long, lngBoeObjNum as Long, _
+                         boolWait As Boolean)
+    On Error GoTo Error_P
+
+    Dim dblWidth As double, dblLevel As double
+   
+    If Not m_Boeni_boolNIOK Then
+        GoTo Passed_P
+    End If
+
+    dblWidth = g_Boe_BoeObj( lngBoeObjNum).dblTrigWidth 
+    dblLevel = g_Boe_BoeObj(lngBoeObjNum ).dblTrigLevel
+
+    If BoeniDLL_DACPulseLE(lngDAC, dblWidth, dblLevel) <> g_BOE_PASSED Then
+        GoTo Failed_P
+    End If
+
+    If (boolWait) Then
+        Sleep CLng(dblWidth + g_Boeni_dblUpdateInterval(lngDAC))
+    End If
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boeni_BoeObjDACPulse failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+''''''''''''''''''''''''''''''''''''''
+
+[Desc_Boeni_CTRPulse]
+OverView:
+    Ouput a TTL level pulse on requested CTR.
+Parameters:
+    lngCTR As Long
+    lngPolarity As Long
+    dblDelay As Double
+    dblWidth As Double
+Remarks:
+    CTR = 0 Or 1
+    Polarity = -1 negative going or 1 positive going.
+    Delay = delay in ms before pulse starts.
+    Width = pulse width in ms.
+
+[Sub_Boeni_CTRPulse]
+Sub Boeni_CTRPulse(lngCTR As Long, lngPolarity As Long, dblDelay As Double, dblWidth As Double)
+    On Error GoTo Error_P
+
+    If Not m_Boeni_boolNIOK Then
+        GoTo Passed_P
+    End If
+
+    If BoeniDLL_CTRPulse(lngCTR, lngPolarity, dblDelay, dblWidth) <> g_BOE_PASSED Then
+        GoTo Failed_P
+    End If
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boeni_CTRPulse"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+''''''''''''''''''''''''''''''''''
+
+''''''''''''''''''''''''''''''''''''''''''''''''''
+'Pre XML version 4 i.e. pre BoeObject definition.
+''''''''''''''''''''''''''''''''''''''''''''''''''
+
+[Desc_Boeni_DACPulse]
+OverView:
+    Ouput a voltage pulse on requested DAC.
+
+Parameters:
+    lngDAC As Long
+    dblWidth As Double
+    dblLevel As Double
+    boolWait As Boolean
+Remarks:
+    DAC = 0 Or 1
+    Width = pulse width in ms.
+    Level = amplitude level of pulse in volts.
+    Wait = true: wait for completion of pulse
+             false: return immediately
+
+[Sub_Boeni_DACPulse]
+Sub Boeni_DACPulse(lngDAC As Long, dblWidth As Double, dblLevel As Double, boolWait As Boolean)
+    On Error GoTo Error_P
+
+    If Not m_Boeni_boolNIOK Then
+        GoTo Passed_P
+    End If
+
+    If BoeniDLL_DACPulseLE(lngDAC, dblWidth, dblLevel) <> g_BOE_PASSED Then
+        GoTo Failed_P
+    End If
+
+    If (boolWait) Then
+        Sleep CLng(dblWidth + g_Boeni_dblUpdateInterval(lngDAC))
+    End If
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boeni_DACPulse failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+''''''''''''''''''''''''''
+
+[InitPackages]
+
+[UnInitPackages]
+
+[Info_Boeni]
+
+

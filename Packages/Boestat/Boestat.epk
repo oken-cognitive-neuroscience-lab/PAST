@@ -1,0 +1,679 @@
+
+' Boestat stuff for Dr. Barry Oken
+' Contact Roger Ellingson, Dan Zajdel, 503.297.5044, rogere@rmegen.net
+' unpublished copyright, 7/5/2002
+
+
+[Header]
+PackageName="Boestat"
+Description="Barry Oken stat Support lib"
+VersionMajor=5
+VersionMinor=0
+VersionInternal=0
+VersionRevision=1
+
+
+[Global]
+
+''''''''Begin Boestat.epk '''''''''''''''''''''''''''''''''
+
+'''''''Meta Data Data Definitions ''''''''
+const Boestat_PackageName As String ="boestat.epk"
+const Boestat_PackageVersion As String ="5.0"
+const Boestat_PackageDate As String ="04/016/2005"
+const Boestat_PackageComments As String ="Boe Obj and Boe Meta Data; SelectBox option"
+''''''''''''''''''''''''''''''''''''''''''''''''''''
+Public g_Boestat_PackageMetaElemObj as ElemObjType
+Declare Public sub Boestat_SetPackageMetaData()
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+''''''''Begin Boestat.epk globals '''''''''''''''''''''''''''''''''
+
+Public g_Boestat_strCatID1() As String
+Public g_Boestat_strCatID2() As String
+Public g_Boestat_boolOK() As Boolean
+Public g_Boestat_GNUM() As Long
+Public g_Boestat_BSNUM() As Long
+Public g_Boestat_boolAcc() As Boolean
+Public g_Boestat_lngRT() As Long
+Public g_Boestat_boolCresp()As Boolean
+Public g_Boestat_boolResp() As Boolean
+
+Declare Public Function Boestat_ReplaceChar(strIn As String, strFind As String, _
+           strReplace As String) as string
+
+Declare Public Function Boestat_BlockCalc( lngGNUMStart As Long, lngGNUMEnd As Long,_
+              lngBSNUMStart As Long, lngBSNUMEnd As Long, Optional boolPrintFullStats As Variant) As String
+
+Declare Public Function QuickSortStatArray(adblIn() As Double, ByVal intLowBound As Integer, _
+      ByVal intHighBound As Integer) As Boolean
+
+Declare Public Function GetArrayMedian(adblIn() As Double, fSort As Boolean) As Double
+
+Declare Public Sub GetArrayStatistics( _
+  adblIn() As Double, _
+  lngN As Long, _
+  dblMean As Double, _
+  dblSumX As Double, _
+  dblSumX2 As Double, _
+  dblVar As Double, _
+  dblStdDev As Double)
+
+'''''''''End Boestat.epk globals ''''''''''''''''''''''''''''''''''
+
+[Desc_Boestat_SetPackageMetaData]
+Overview:
+	
+Parameters:
+
+Remarks:
+
+[Sub_Boestat_SetPackageMetaData]
+Sub Boestat_SetPackageMetaData()
+    On Error Goto Error_P
+
+    Dim lngAttribItem as long, lngAttribTot as long
+    Dim lngElemItem as long
+
+    g_Boestat_PackageMetaElemObj.strName="PackageInfo"
+    g_Boestat_PackageMetaElemObj.boolAttrib=true
+
+    lngAttribItem=1
+    g_Boestat_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Name"
+    g_Boestat_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boestat_PackageName
+
+    lngAttribItem= lngAttribItem + 1
+    g_Boestat_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Version"
+    g_Boestat_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boestat_PackageVersion
+
+    lngAttribItem = lngAttribItem + 1
+    g_Boestat_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Date"
+    g_Boestat_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boestat_PackageDate
+
+    lngAttribItem = lngAttribItem + 1
+    g_Boestat_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Comments"
+    g_Boestat_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boestat_PackageComments
+   
+    lngAttribTot=lngAttribItem
+   
+    lngElemItem = g_Boexml_lngBoeMetaElemObjN
+
+    Boexml_SetElemObjItem lngAttribTot, g_Boestat_PackageMetaElemObj, _
+                          g_Boexml_arrBoeMetaElemObj(lngElemItem)
+
+    g_Boexml_lngBoeMetaElemObjN = g_Boexml_lngBoeMetaElemObjN + 1
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boestat_SetPackageMetaData failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+'''''''''''''''''''''''''''''''''''''
+
+Public Function QuickSortStatArray(adblIn() As Double, ByVal intLowBound As Integer, _
+      ByVal intHighBound As Integer) As Boolean
+  ' Comments  : Sort the passed array of doubles (quicksort algorithm)
+  ' Parameters: adblIn() - Array of double that gets sorted
+  '             intLowBounds - Low bound of array
+  '             intHighBound - High bound of array
+  ' Returns   : True if successful
+  ' Source    : Total VB SourceBook 6
+  '
+  Dim intX As Integer
+  Dim intY As Integer
+  Dim dblMidBound As Double
+  Dim dblTmp As Double
+  Dim fOK As Boolean
+  
+  On Error GoTo PROC_ERR
+  If intHighBound > intLowBound Then
+    dblMidBound = adblIn((intLowBound + intHighBound) \ 2)
+    intX = intLowBound
+    intY = intHighBound
+    
+    Do While intX <= intY
+      If adblIn(intX) >= dblMidBound And adblIn(intY) <= dblMidBound Then
+        dblTmp = adblIn(intX)
+        adblIn(intX) = adblIn(intY)
+        adblIn(intY) = dblTmp
+        intX = intX + 1
+        intY = intY - 1
+      Else
+        If adblIn(intX) < dblMidBound Then
+          intX = intX + 1
+        End If
+        If adblIn(intY) > dblMidBound Then
+          intY = intY - 1
+        End If
+      End If
+    Loop
+  
+    fOK = QuickSortStatArray(adblIn(), intLowBound, intY)
+    fOK = QuickSortStatArray(adblIn(), intX, intHighBound)
+  End If
+ QuickSortStatArray = True
+PROC_EXIT:
+  Exit Function
+PROC_ERR:
+  MsgBox "Error: " & Err.Number & ". " & Err.Description, , _
+    "QuickSortStatArray"
+  Resume PROC_EXIT
+End Function
+''''''''''''''''''''''''''''''''''''''''
+
+Public Function GetArrayMedian(adblIn() As Double, fSort As Boolean) As Double
+  ' Comments  : Returns the median of the elements in the supplied array
+  ' Parameters: adblIn - Array of double
+  '             fSort - True to sort the array (faster)
+  '                     False to sort a copy of the array
+  '                     (does not modify the original array)
+  ' Returns   : Median as a double
+  ' Source    : Total VB SourceBook 6
+  '
+  Dim adblTmp() As Double
+  Dim intCounter As Integer
+  Dim dblMedian As Double
+  Dim intElements As Integer
+  Dim intIndex As Integer
+  Dim fInterpolate As Boolean
+  Dim dblTemp As Double
+  Dim fFlag As Boolean
+  
+  On Error GoTo PROC_ERR
+ 
+  intElements = UBound(adblIn) - LBound(adblIn) + 1
+  'BoeDebugMsg "NumElements:" & CStr(intElements)
+  If intElements = 1 Then
+    dblMedian = adblIn(LBound(adblIn))
+  Else
+    dblTemp = (intElements + 1) / 2
+    intIndex = Int(dblTemp)
+    fInterpolate = (intElements Mod 2 = 0)
+  
+    If fSort Then
+      ' Sort the array
+      fFlag = QuickSortStatArray(adblIn(), LBound(adblIn), UBound(adblIn))
+  
+      ' Calculate the median (interpolate if necessary)
+      If fInterpolate Then
+        dblMedian = (adblIn(intIndex) + adblIn(intIndex + 1)) / 2
+      Else
+        dblMedian = adblIn(intIndex)
+      End If
+    Else
+      ' Copy the array
+      ReDim adblTmp(LBound(adblIn) To UBound(adblIn))
+      For intCounter = LBound(adblIn) To UBound(adblIn)
+        adblTmp(intCounter) = adblIn(intCounter)
+      Next intCounter
+  
+      ' Sort the array
+      fFlag = QuickSortStatArray(adblTmp(), LBound(adblIn), UBound(adblIn))
+  
+      ' Calculate the median (interpolate if necessary)
+      If fInterpolate Then
+        dblMedian = (adblTmp(intIndex) + adblTmp(intIndex + 1)) / 2
+      Else
+        dblMedian = adblTmp(intIndex)
+      End If
+    End If
+  End If
+  GetArrayMedian = dblMedian
+  
+PROC_EXIT:
+  Exit Function
+PROC_ERR:
+  MsgBox "Error: " & Err.Number & ". " & Err.Description, , _
+    "GetArrayMedian"
+  Resume PROC_EXIT
+End Function
+'''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub GetArrayStatistics( _
+  adblIn() As Double, _
+  lngN As Long, _
+  dblMean As Double, _
+  dblSumX As Double, _
+  dblSumX2 As Double, _
+  dblVar As Double, _
+  dblStdDev As Double)
+  ' Comments  : Calculates descriptive statistics of an array using
+  '             N-1 method
+  '             Values are set through the passes parameters
+  ' Input     : adblIn - array of doubles to analyze
+  ' Sets      : lngN       - number of non-null array elements
+  '             dblMean    - mean of the array elements
+  '             dblSumX    - sum of the array elements
+  '             dblSumX2   - sum of the square of each array element
+  '             dblVar     - variance of the array
+  '             dblStdDev  - standard deviation of the array
+  ' Returns   : Nothing
+  ' Source    : Total VB SourceBook 6
+  '
+  Dim intCounter As Integer
+  On Error GoTo PROC_ERR
+  
+  lngN = 0
+  dblMean = 0#
+  dblSumX = 0#
+  dblSumX2 = 0#
+  
+  'BoeDebugMsg "GetArrayStatistics LBound="&Cstr(LBound(adblIn)) & " UBound=" & CStr(UBound(adblIn))
+  For intCounter = 1 To UBound(adblIn)
+    If Not IsNull(adblIn(intCounter)) Then
+      lngN = lngN + 1
+      dblSumX = dblSumX + adblIn(intCounter)
+      dblSumX2 = dblSumX2 + adblIn(intCounter) ^ 2
+    End If
+  Next intCounter
+  dblVar = 0#
+  dblStdDev = 0#
+  If lngN > 0 Then
+    dblMean = dblSumX / lngN
+    ' For N method, the "-1" is removed.
+    dblVar = (lngN * dblSumX2 - dblSumX ^ 2) / (lngN * (lngN - 1))
+    If dblVar > 0# Then
+      dblStdDev = Sqr(dblVar)
+      ' You can also calculate:
+      '   Coefficient of Variance = dblStdDev * lngN / dblSumX
+      '   (make sure dblSumX <> 0)
+      '   Standard Error = dblStdDev / Sqr(lngN)
+    End If
+  End If
+  
+PROC_EXIT:
+  Exit Sub
+PROC_ERR:
+  MsgBox "Error: " & Err.Number & ". " & Err.Description, , _
+    "GetArrayStatistics"
+  Resume PROC_EXIT
+End Sub
+''''''''''''''''''''''''''''''''''''''''''
+
+[Desc_Boestat_ReplaceChar]
+OverView:
+    Replace selected char in input string with replacement char.
+    Returns string with replacements made if any.
+Parameters:
+    strIn As String. Input string
+    strFind As String. Char to be replaced.
+    strReplace As String. Char to replace with.
+Remarks:
+    Does not modify input string.
+
+[Sub_Boestat_ReplaceChar]
+Function Boestat_ReplaceChar(strIn As String, strFind As String, strReplace As String) As String
+    On Error GoTo Error_P
+
+    Dim lngCounter As Long
+    Dim strTmp As String
+    Dim chrTmp As String * 1
+
+    ' Loop through the string
+    For lngCounter = 1 To Len(strIn)
+        ' Get the current character
+        chrTmp = Mid$(strIn, lngCounter)
+        If chrTmp <> strFind Then
+            ' Its not a match, do nothing
+            strTmp = strTmp & chrTmp
+        Else
+            ' Its a match, so use the replacement character
+            strTmp = strTmp & strReplace
+        End If
+    Next lngCounter
+  ' Return the value
+
+  Boestat_ReplaceChar = strTmp
+
+Exit_P:
+  Exit Function
+Error_P:
+  MsgBox "Error: " & Err.Number & ". " & Err.Description, , _
+    "Boestat_ReplaceChar"
+  Resume Exit_P
+End Function
+'''''''''''''''''''''''''''''''''''''''
+
+[Desc_Boestat_BlockCalc]
+OverView:
+    Calculate block stats for experiment CatID1 & CatID2 for specified GNUMs and BSNums.
+    Returns string comprised of:
+        strCatID1, strCatID2,
+        NumAcc,
+        N,
+        AccMedianRT,
+        Mean,
+        StdDev.
+Parameters:
+    lngGNUMStart As Long. Starting block GNUM.
+    lngGNUMEnd As Long. Ending block GNUM
+    lngBSNUMStart As Long. Starting Block Sample BSNUM.
+    lngBSNUMEnd As Long. Ending Block Sample GSNUM.
+Remarks:
+    Intended for simple quick run-time stats display, and logging.
+    Only performs stats on CatID1 and CatID2.
+    Displays result if g_Boe_boolDebugMsg=True.
+
+[Sub_Boestat_BlockCalc]
+Function Boestat_BlockCalc(lngGNUMStart As Long, lngGNUMEnd As Long, _
+            lngBSNUMStart As Long, lngBSNUMEnd As Long, Optional boolPrintFullStats As Variant) As String
+    On Error GoTo Error_P
+    
+    Dim strResult As String, strResult2 As String
+    Dim strCatID1 As String, strCatID1List() As String
+    Dim strCatID2 As String, strCatID2List() As String
+    Dim lngNumCatID1 As Long, lngNumCatID2 As Long
+    Dim lngNumOK As Long, lngCatID1 As Long, lngCatID2 As Long
+    Dim lngNumAcc As Long, lngNumWrong As Long, lngNumTot As Long 
+    Dim lngNumNonResp As Long, lngNumResp As Long
+    Dim lngNumCResp As Long, lngNumWCResp As Long, lngNumIncResp As Long
+    Dim dblAccRT() As Double
+    Dim lngAccMedianRT As Long
+    Dim lngGASN As Long, lngGNUM As Long, lngBSNUM As Long
+    Dim boolGNUM As Boolean, boolBSNUM As Boolean
+    Dim boolFound1 As Boolean, boolFound2 As Boolean
+    Dim lngN As Long
+    Dim dblMean As Double, dblSumX As Double, dblSumX2 As Double
+    Dim dblVar As Double, dblStdDev As Double
+
+    lngNumCatID1 = 0
+    lngNumCatID2 = 0
+    ReDim strCatID1List(0)
+    ReDim strCatID2List(0)
+    
+    For lngGASN = 1 To GASN
+        strCatID1 = g_Boestat_strCatID1(lngGASN)
+
+        If strCatID1 <> "" Then
+            boolFound1 = False
+            lngNumCatID1 = UBound(strCatID1List)
+
+            For lngCatID1 = 1 To lngNumCatID1
+                If strCatID1 = strCatID1List(lngCatID1) Then
+                    boolFound1 = True
+                End If
+            Next
+
+            If Not boolFound1 Then
+                lngNumCatID1 = lngNumCatID1 + 1
+                ReDim Preserve strCatID1List(1 To lngNumCatID1)
+                strCatID1List(lngNumCatID1) = strCatID1
+            End If
+        End If
+
+        strCatID2 = g_Boestat_strCatID2(lngGASN)
+
+        If strCatID2 <> "" Then
+            boolFound2 = False
+            lngNumCatID2 = UBound(strCatID2List)
+
+            For lngCatID2 = 1 To lngNumCatID2
+                If strCatID2 = strCatID2List(lngCatID2) Then
+                    boolFound2 = True
+                End If
+            Next
+            If Not boolFound2 Then
+                lngNumCatID2 = lngNumCatID2 + 1
+                ReDim Preserve strCatID2List(1 To lngNumCatID2)
+                strCatID2List(lngNumCatID2) = strCatID2
+            End If
+        End If
+    Next ' end of GASN forloop
+    
+    strResult = ""
+    strResult2 = ""
+    
+    Debug.Print " N strCatID1  "  & lngNumCatID1  &  " N strCatID2 " & lngNumCatID2
+
+    For lngCatID1 = 1 To lngNumCatID1
+        strCatID1 = strCatID1List(lngCatID1)
+
+        if (lngNumCatID2 <> 0) then
+
+            For lngCatID2 = 1 To lngNumCatID2
+                strCatID2 = strCatID2List(lngCatID2)
+                lngNumAcc = 0
+                lngNumTot = 0
+                lngNumResp=0
+                lngNumNonResp = 0
+                lngNumCResp = 0
+                lngNumIncResp = 0
+
+                ReDim dblAccRT(0)
+                For lngGASN = 1 To GASN
+                    boolGNUM = False
+                    boolBSNUM = False
+                    lngGNUM = g_Boestat_GNUM(lngGASN)
+
+                    If lngGNUM >= lngGNUMStart And lngGNUM <= lngGNUMEnd Then
+                        boolGNUM = True
+                        lngBSNUM = g_Boestat_BSNUM(lngGASN)
+
+                        If lngBSNUM >= lngBSNUMStart And lngBSNUM <= lngBSNUMEnd Then
+                            boolBSNUM = True
+                        End If
+                    End If
+                    If boolGNUM And boolBSNUM Then
+                        If g_Boestat_boolOK(lngGASN) Then
+                            If g_Boestat_strCatID1(lngGASN) = strCatID1 And _
+                                     g_Boestat_strCatID2(lngGASN) = strCatID2 Then
+                                lngNumTot = lngNumTot + 1
+
+                                'This conditional will record the full set
+                                'of statistics if the flag boolPrintFullStatus is set to true.
+                                'It will not record this information if it is set to false.
+
+                                If Not IsMissing(boolPrintFullStats) Then 
+                                    If (boolPrintFullStats = True) Then					 
+                                        If (g_Boestat_lngRT(lngGASN) <> g_Boe_lngNull) Then
+		                                    lngNumResp = lngNumResp + 1
+
+                                            If (g_Boestat_boolCResp(lngGASN) = True) Then 
+                                                lngNumCResp = lngNumCResp + 1
+                                            Else 
+                                                lngNumIncResp = lngNumIncResp + 1
+                                            End If
+                                        Else 
+                                            lngNumNonResp = lngNumNonResp + 1		
+                                        End If
+                                    End If
+                                End If 
+
+                                If g_Boestat_boolAcc(lngGASN) Then
+                                    lngNumAcc = lngNumAcc + 1
+                                    ReDim Preserve dblAccRT(1 To lngNumAcc)
+                                    'BoeDebugMsg strCatID & ". GASN:" & CStr(lngGASN) & ". lngNumAcc:" & CStr(lngNumAcc)
+                                    dblAccRT(lngNumAcc) = CDbl(g_Boestat_lngRT(lngGASN))
+                                End If
+                            End If   
+                        End If
+                    End If
+                Next
+    
+                If lngNumAcc = 0 Then
+                    lngN = 0
+                    dblMean = CDbl(g_Boe_sngNULL)
+                    dblStdDev = CDbl(g_Boe_sngNULL)
+                    lngAccMedianRT = g_Boe_lngNULL
+                ElseIf lngNumAcc = 1 Then
+                    lngN = 1
+                    dblMean = dblAccRT(1)
+                    dblStdDev = 0#
+                    lngAccMedianRT = dblAccRT(1)
+                Else
+                    GetArrayStatistics dblAccRT(), lngN, dblMean, dblSumX, dblSumX2, dblVar, dblStdDev
+                    lngAccMedianRT = CLng(GetArrayMedian(dblAccRT(), False))
+                End If
+
+                'This conditional will print the full set
+                'of statistics if the flag boolPrintFullStatus is set to true.
+                'It will print only the standard deviation stats if the flag is false.
+
+                If Not IsMissing(boolPrintFullStats) Then 
+                    If (boolPrintFullStats = True) Then
+                        strResult = "CatID1=" & strCatID1 & ", CatID2=" & strCatID2 & _
+                        ",  NumTot=" & CStr(lngNumTot) & ", NumResp=" & CStr(lngNumResp) & _
+                        ",  NumNonResp=" & CStr(lngNumNonResp) & ", NumCResp=" & CStr(lngNumCResp) & _
+                        ",  NumIncResp=" & CStr(lngNumIncResp) & ", NumAcc=" & CStr(lngNumAcc) & _
+                        ", NumStats=" & CStr(lngN) & ", AccMedianRT=" & CStr(lngAccMedianRT) & _
+                        ", Mean=" & CStr(Format(dblMean, "0.00")) & _
+                        ", StdDev=" & CStr(Format(dblStdDev, "0.00"))
+                    Else 
+                        strResult = "CatID1=" & strCatID1 & ", CatID2=" & strCatID2 & _
+                        ", NumTot =" & CStr(lngNumTot) & ", NumAcc=" & CStr(lngNumAcc) & _ 
+                        ", NumStats=" & CStr(lngN) & ", AccMedianRT=" & CStr(lngAccMedianRT) & _
+                        ", Mean=" & CStr(Format(dblMean, "0.00")) & _
+                        ", StdDev=" & CStr(Format(dblStdDev, "0.00"))
+                    End If
+                Else
+                    strResult = "CatID1=" & strCatID1 & ", CatID2=" & strCatID2 & _
+                        ", NumTot =" & CStr(lngNumTot) & ", NumAcc=" & CStr(lngNumAcc) & _ 
+                        ", NumStats=" & CStr(lngN) & ", AccMedianRT=" & CStr(lngAccMedianRT) & _
+                        ", Mean=" & CStr(Format(dblMean, "0.00")) & _
+                        ", StdDev=" & CStr(Format(dblStdDev, "0.00"))
+                End If
+          
+                Boe_DebugMsg "GNUMStart:" & CStr(lngGNUMStart) & " End:" & CStr(lngGNUMEnd) & ebcrlf & _
+                            "BSNUMStart:" & CStr(lngBSNUMStart) & " End:" & CStr(lngBSNUMEnd) & ebcrlf & _
+                            strResult
+                strResult2 = strResult2 & IIf(strResult2 = "", "", "; ") & strResult
+
+            Next
+        Else
+            lngNumAcc = 0
+            lngNumTot = 0
+            lngNumResp=0
+            lngNumNonResp = 0
+            lngNumCResp = 0
+            lngNumIncResp = 0
+
+            ReDim dblAccRT(0)
+
+            For lngGASN = 1 To GASN
+                boolGNUM = False
+                boolBSNUM = False
+                lngGNUM = g_Boestat_GNUM(lngGASN)
+
+                If lngGNUM >= lngGNUMStart And lngGNUM <= lngGNUMEnd Then
+                    boolGNUM = True
+                    lngBSNUM = g_Boestat_BSNUM(lngGASN)
+
+                    If lngBSNUM >= lngBSNUMStart And lngBSNUM <= lngBSNUMEnd Then
+                        boolBSNUM = True
+                    End If
+                End If
+
+                If boolGNUM And boolBSNUM Then
+                    If g_Boestat_boolOK(lngGASN) Then
+                        If g_Boestat_strCatID1(lngGASN) = strCatID1 Then
+                            lngNumTot = lngNumTot + 1
+
+                            'This conditional will record the full set
+                            'of statistics if the flag boolPrintFullStatus is set to true.
+                            'It will not record this information if it is set to false.
+
+                            If Not IsMissing(boolPrintFullStats) Then 
+                                If (boolPrintFullStats = True) Then
+                                    If (g_Boestat_lngRT(lngGASN) <> g_Boe_lngNull) Then
+                                        lngNumResp = lngNumResp + 1
+
+			                            If (g_Boestat_boolCResp(lngGASN) = True) Then 
+                                            lngNumCResp = lngNumCResp + 1
+                                        Else 
+				 	                        lngNumIncResp = lngNumIncResp + 1
+                                        End If
+				                    Else 
+                                        lngNumNonResp = lngNumNonResp + 1		
+                                    End If
+                                End If
+                            End If 
+
+                            If g_Boestat_boolAcc(lngGASN) Then
+                                lngNumAcc = lngNumAcc + 1
+                                ReDim Preserve dblAccRT(1 To lngNumAcc)
+                                'BoeDebugMsg strCatID & ". GASN:" & CStr(lngGASN) & ". lngNumAcc:" & CStr(lngNumAcc)
+                                dblAccRT(lngNumAcc) = CDbl(g_Boestat_lngRT(lngGASN))
+                            End If
+                        End If   
+                    End If
+                End If
+            Next  
+
+            If lngNumAcc = 0 Then
+                lngN = 0
+                dblMean = CDbl(g_Boe_sngNULL)
+                dblStdDev = CDbl(g_Boe_sngNULL)
+                lngAccMedianRT = g_Boe_lngNULL
+            ElseIf lngNumAcc = 1 Then
+                lngN = 1
+                dblMean = dblAccRT(1)
+                dblStdDev = 0#
+                lngAccMedianRT = dblAccRT(1)
+            Else
+                GetArrayStatistics dblAccRT(), lngN, dblMean, dblSumX, dblSumX2, dblVar, dblStdDev
+                lngAccMedianRT = CLng(GetArrayMedian(dblAccRT(), False))
+            End If
+
+            'This conditional will print the full set
+            'of statistics if the flag boolPrintFullStatus is set to true.
+            'It will print only the standard deviation stats if the flag is false.
+
+            If Not IsMissing(boolPrintFullStats) Then 
+                If (boolPrintFullStats = True) Then
+                strResult = "CatID1=" & strCatID1 & _
+                    ",  NumTot=" & CStr(lngNumTot) & ", NumResp=" & CStr(lngNumResp) & _
+                    ",  NumNonResp=" & CStr(lngNumNonResp) & ", NumCResp=" & CStr(lngNumCResp) & _
+                    ",  NumIncResp=" & CStr(lngNumIncResp) & ", NumAcc=" & CStr(lngNumAcc) & _
+                    ", NumStats=" & CStr(lngN) & ", AccMedianRT=" & CStr(lngAccMedianRT) & _
+                    ", Mean=" & CStr(Format(dblMean, "0.00")) & _
+                    ", StdDev=" & CStr(Format(dblStdDev, "0.00"))
+                Else 
+                    strResult = "CatID1=" & strCatID1 & _
+                    ", NumTot =" & CStr(lngNumTot) & ", NumAcc=" & CStr(lngNumAcc) & _ 
+                    ", NumStats=" & CStr(lngN) & ", AccMedianRT=" & CStr(lngAccMedianRT) & _
+                    ", Mean=" & CStr(Format(dblMean, "0.00")) & _
+                    ", StdDev=" & CStr(Format(dblStdDev, "0.00"))
+                End If
+            Else
+                strResult = "CatID1=" & strCatID1 & _
+                    ", NumTot =" & CStr(lngNumTot) & ", NumAcc=" & CStr(lngNumAcc) & _ 
+                    ", NumStats=" & CStr(lngN) & ", AccMedianRT=" & CStr(lngAccMedianRT) & _
+                    ", Mean=" & CStr(Format(dblMean, "0.00")) & _
+                    ", StdDev=" & CStr(Format(dblStdDev, "0.00"))
+            End If
+      
+            Boe_DebugMsg "GNUMStart:" & CStr(lngGNUMStart) & " End:" & CStr(lngGNUMEnd) & ebcrlf & _
+                        "BSNUMStart:" & CStr(lngBSNUMStart) & " End:" & CStr(lngBSNUMEnd) & ebcrlf & _
+                        strResult
+            strResult2 = strResult2 & IIf(strResult2 = "", "", "; ") & strResult
+
+        End If 
+
+    Next 'end of catID forloop
+    
+Passed_P:
+    Boestat_BlockCalc = strResult2
+    Exit Function
+Failed_P:
+    MsgBox "Boestat_BlockCalc failed"
+    Boestat_BlockCalc = "Failed"
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+[InitPackages]
+
+
+[UnInitPackages]
+
+
+[Info_Boestat]
+
+
+

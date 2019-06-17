@@ -1,0 +1,755 @@
+'
+' Boecpt stuff for Dr. Barry Oken
+' Contact Roger Ellingson, Dan Zajdel, 503.297.5044, rogere@rmegen.net
+' unpublished copyright, 4/5/2005
+
+'Boecpt.epk depends on Boecpt.dll being installed in the $WINDOWS directory
+
+
+[Header]
+PackageName="Boecpt"
+Description="Barry Oken Continuous Performance Task Support lib"
+VersionMajor=5
+VersionMinor=0
+VersionInternal=0
+VersionRevision=0
+
+[Global]
+
+
+''''''Begin Boecpt.epk global''''''''''''''''''''''''''
+'''''''Meta Data Data Definitions ''''''''
+
+const Boecpt_PackageName As String ="boecpt.epk"
+const Boecpt_PackageVersion As String ="5.0"
+const Boecpt_PackageDate As String ="04/6/2005"
+const Boecpt_PackageComments As String ="Initial version"
+
+'''''''''''''''''''''''''''''''''''''''''''
+'Boecpt specific meta
+Public g_Boecpt_PackageMetaElemObj as ElemObjType
+Declare Public sub Boecpt_InitPackageMetaData()
+Declare Public sub Boecpt_SetPackageMetaData()
+
+''''''''''''''''''''''''''''''''''''''''''''
+
+Declare Function BoecptDLL_Reset Lib "F:\\ad\\barry\\Boestuff\\Boecpt.Net\\Debug\\Boecpt.dll" _
+                 () As long
+Declare Function BoecptDLL_Open Lib "F:\\ad\\barry\\Boestuff\\Boecpt.Net\\Debug\\Boecpt.dll" _
+                 ( ByVal lngTargetRadius As long, ByVal lngMaxX As long, ByVal lngMaxY As long, ByVal lngMaxTracks as long) As long
+Declare Function BoecptDLL_Close Lib "F:\\ad\\barry\\Boestuff\\Boecpt.Net\\Debug\\Boecpt.dll" _
+                 () As long
+Declare Function BoecptDLL_SetMode Lib "\\ad\\barry\\Boestuff\\Boecpt.Net\\Debug\\Boecpt.dll" _
+               (ByVal lngMode As long) As long
+Declare Function BoecptDLL_SetInputScale Lib "\\ad\\barry\\Boestuff\\Boecpt.Net\\Debug\\Boecpt.dll" _
+                (ByVal sngScale As Single) As long
+Declare Function BoecptDLL_SetBuffetScale Lib "\\ad\\barry\\Boestuff\\Boecpt.Net\\Debug\\Boecpt.dll" _
+                (ByVal sngScale As Single) As long
+Declare Function BoecptDLL_SetM Lib "\\ad\\barry\\Boestuff\\Boecpt.Net\\Debug\\Boecpt.dll" _
+                (ByVal sng As Single) As long
+Declare Function BoecptDLL_SetC Lib "\\ad\\barry\\Boestuff\\Boecpt.Net\\Debug\\Boecpt.dll" _
+                (ByVal sng As Single) As long
+Declare Function BoecptDLL_SetK Lib "\\ad\\barry\\Boestuff\\Boecpt.Net\\Debug\\Boecpt.dll" _
+                (ByVal sng As Single) As long
+Declare Function BoecptDLL_GetNextPoint Lib "\\ad\\barry\\Boestuff\\Boecpt.Net\\Debug\\Boecpt.dll" _
+                 (ByVal lngMillisec as long, ByVal lngMouseX As long, ByVal lngMouseY As long, _
+                 ByRef lngPtrNextX As long, ByRef lngPtrNextY As long, _
+                 ByRef sngDistance as Single, ByVal boolStore as boolean) As long
+
+Declare Function BoecptDLL_ResetTracks Lib "F:\\ad\\barry\\Boestuff\\Boecpt.Net\\Debug\\Boecpt.dll" () As long
+
+Declare Function BoecptDLL_LogTracks Lib "F:\\ad\\barry\\Boestuff\\Boecpt.Net\\Debug\\Boecpt.dll" _
+                 (ByVal lpszPath As String, ByVal lpszHeader As String) As long
+
+Declare Function BoecptDLL_LogDistanceStats Lib "F:\\ad\\barry\\Boestuff\\Boecpt.Net\\Debug\\Boecpt.dll" _
+                 (ByVal lpszPath As String, ByVal lpszHeader As String, ByVal boolCalc as boolean) As long
+
+Declare Function BoecptDLL_GetDistanceStats Lib "F:\\ad\\barry\\Boestuff\\Boecpt.Net\\Debug\\Boecpt.dll" ( _
+                  ByRef lngCount as long, ByRef dblMin as double, ByRef dblMax as double,  ByRef dblMedian as double, _
+                  ByRef dblAve As Double, ByRef dblAD As Double, ByRef dblSD As Double, ByRef dblSV As Double, _
+                  ByRef dblS As Double, ByRef dblK As Double, ByVal boolCalc as boolean) As long
+
+Declare Function BoecptDLL_CalcDistanceStats Lib "F:\\ad\\barry\\Boestuff\\Boecpt.Net\\Debug\\Boecpt.dll" _
+                 () As long
+
+
+public m_Boecpt_boolOK as boolean ' true=opened ok, false=not opened-no other functions will pass
+
+Declare Public Function Boecpt_Open(byval lngTargetRadius as long, byval lngMaxX as long, byval lngMaxY as long, _
+                 ByVal lngMaxTracks as long ) As Boolean
+Declare Public Function Boecpt_Close() as boolean
+Declare Public Function Boecpt_Reset() as boolean
+Declare Public Function Boecpt_SetMode(byval lngMode as long) as boolean
+Declare Public Function Boecpt_SetInputScale(byval sngScale as single) as boolean
+Declare Public Function Boecpt_SetBuffetScale(byval sngScale as single) as boolean
+Declare Public Function Boecpt_SetM(byval sng as single) as boolean
+Declare Public Function Boecpt_SetC(byval sng as single) as boolean
+Declare Public Function Boecpt_SetK(byval sng as single) as boolean
+Declare Public Function Boecpt_GetNextPoint( ByVal lngMillisec as long, byval lngMouseX as long, byval lngMouseY as long, _
+                      byref lngPtrNextX as long, byref lngPtrNextY as long, ByRef sngPtrDistance as single, ByVal boolStore as boolean) as boolean
+Declare public Function Boecpt_ResetTracks () As Boolean
+Declare public Function Boecpt_LogTracks (ByVal lpszPath As String, ByVal lpszHeader As String) As Boolean
+Declare public Function Boecpt_LogDistanceStats( ByVal lpszPath As String, ByVal lpszHeader As String, ByVal boolCalc as boolean) As Boolean
+Declare Public Function Boecpt_GetDistanceStats ( Byref lngCount as long, ByRef dblMin as double, ByRef dblMax as double,_
+                  ByRef dblMedian as double, ByRef dblAve As Double, ByRef dblAveDev As Double, ByRef dblStdDev As Double, ByRef dblStdVar As Double,_
+                  ByRef dblSkew As Double, ByRef dblKurt As Double, ByVal boolCalc as boolean) As boolean
+Declare Public Function Boecpt_CalcDistanceStats()
+
+'''''''' end Boecpt.epk global ''''''''''''''''''''''''
+
+''''''''''''''''''''''''''''''''''''
+'Meta Data Related Code
+''''''''''''''''''''''''''''''''''''
+
+[Desc_Boecpt_SetPackageMetaData]
+Overview:
+	
+Parameters:
+
+Remarks:
+
+[PreSub_Boecpt_SetPackageMetaData]
+
+[Sub_Boecpt_SetPackageMetaData]
+
+Sub Boecpt_SetPackageMetaData()
+    On Error Goto Error_P
+
+    Dim lngAttribItem as long, lngAttribTot as long
+    Dim lngElemItem as long
+
+    
+    g_Boecpt_PackageMetaElemObj.strName="PackageInfo"
+    g_Boecpt_PackageMetaElemObj.boolAttrib=true
+
+    lngAttribItem=1
+    g_Boecpt_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Name"
+    g_Boecpt_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boecpt_PackageName
+
+    lngAttribItem= lngAttribItem + 1
+    g_Boecpt_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Version"
+    g_Boecpt_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boecpt_PackageVersion
+
+    lngAttribItem = lngAttribItem + 1
+    g_Boecpt_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Date"
+    g_Boecpt_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boecpt_PackageDate
+
+    lngAttribItem = lngAttribItem + 1
+    g_Boecpt_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Comments"
+    g_Boecpt_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boecpt_PackageComments
+
+   
+    lngAttribTot=lngAttribItem
+   
+    lngElemItem = g_Boe_lngBoeMetaElemObjN
+
+    Boe_SetElemObjItem lngAttribTot, g_Boecpt_PackageMetaElemObj, _
+                          g_Boe_arrBoeMetaElemObj(lngElemItem)
+
+    g_Boe_lngBoeMetaElemObjN = g_Boe_lngBoeMetaElemObjN + 1
+
+    m_Boecpt_boolOK = False
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boecpt_SetPackageMetaData failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+
+
+''''''''''''''''''''''''''''''''''''
+'Boecpt Specific Code
+''''''''''''''''''''''''''''''''''''
+[Desc_Boecpt_Open]
+OverView:
+    Open the package and initialize DLL.
+
+Parameters:
+    lngTargetRadius: radius of target image (width if square), lngMaxX: width in pts of canvas, lngMaxY: height in pts of canvas
+	
+Remarks:
+    None
+
+[PreSub_Boecpt_Open]
+
+[Sub_Boecpt_Open]
+
+public Function Boecpt_Open(lngTargetRadius as long, lngMaxX as long, lngMaxY as long, lngMaxTracks as long) As Boolean
+    On Error GoTo Error_P
+
+    If BoecptDLL_Open(lngTargetRadius,lngMaxX,lngMaxY, lngMaxTracks) <> g_BOE_PASSED Then
+        MsgBox "Boecpt_Open: Open failed"
+        GoTo Failed_P
+    End If
+        
+Passed_P:
+    m_Boecpt_boolOK = True
+    Boecpt_Open= True
+    Exit Function
+Failed_P:
+    Boecpt_Open = False
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+[PostSub_Boecpt_Open]
+
+
+'''''''''''''''''''''''''''''''''''''''''''''
+[Desc_Boecpt_Close]
+OverView:
+    Closes the dll.
+
+Parameters:
+
+Remarks:
+    None
+
+[PreSub_Boecpt_Close]
+
+[Sub_Boecpt_Close]
+
+Public Function Boecpt_Close() As Boolean
+    On Error GoTo Error_P
+
+    If Not m_Boecpt_boolOK Then
+        GoTo Passed_P
+    End If
+
+    If BoecptDLL_Close() <> g_BOE_PASSED Then
+        GoTo Failed_P
+    End If
+
+    m_Boecpt_boolOK = False
+
+Passed_P:
+    Boecpt_Close = True
+    Exit Function
+Failed_P:
+    MsgBox "Boecpt_Close failed"
+    Boecpt_Close = False
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+[Post_Sub_Boecpt_Close]
+
+'''''''''''''''''''''''''''''''''
+
+[Desc_Boecpt_Reset]
+OverView:
+    Reset state to inital values.
+
+Parameters:
+	
+Remarks:
+    None
+
+[PreSub_Boecpt_Reset]
+
+[Sub_Boecpt_Reset]
+
+Public Function Boecpt_Reset() As Boolean
+    On Error GoTo Error_P
+
+    If Not m_Boecpt_boolOK Then
+        GoTo Passed_P
+    End If
+
+    If BoecptDLL_Reset() <> g_BOE_PASSED Then
+        MsgBox "Boecpt_Reset: Open failed"
+        GoTo Failed_P
+    End If
+        
+Passed_P:
+    Boecpt_Reset= True
+    Exit Function
+Failed_P:
+    Boecpt_Reset = False
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+[PostSub_Boecpt_Reset]
+
+'''''''''''''''''''''''''''''''''''''''''''
+
+[Desc_Boecpt_SetMode]
+OverView:
+    Set the cpt operation mode.
+
+Parameters:
+    lngMode: 1=Auto, 2=Interactive
+
+Remarks:
+    None
+
+[PreSub_Boecpt_SetMode]
+
+[Sub_Boecpt_SetMode]
+
+Public Function Boecpt_SetMode(lngMode as long) As Boolean
+    On Error GoTo Error_P
+
+    If Not m_Boecpt_boolOK Then
+        GoTo Passed_P
+    End If
+
+    If BoecptDLL_SetMode( lngMode) <> g_BOE_PASSED Then
+        MsgBox "Boecpt_SetMode: failed"
+        GoTo Failed_P
+    End If
+        
+Passed_P:
+    Boecpt_SetMode= True
+    Exit Function
+Failed_P:
+    Boecpt_SetMode = False
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+[PostSub_Boecpt_SetMode]
+
+'''''''''''''''''''''''''''''''''''''''''''
+
+[Desc_Boecpt_SetInputScale]
+OverView:
+    Set the cpt input scale factor.
+
+Parameters:
+    sngScale: >0.  Default=250.0
+
+Remarks:
+    Lower values make more mouse movement necessary to move target.
+
+[PreSub_Boecpt_SetInputScale]
+
+[Sub_Boecpt_SetInputScale]
+
+Public Function Boecpt_SetInputScale(sngScale as single) As Boolean
+    On Error GoTo Error_P
+
+    If Not m_Boecpt_boolOK Then
+        GoTo Passed_P
+    End If
+
+    If BoecptDLL_SetInputScale( sngScale) <> g_BOE_PASSED Then
+        MsgBox "Boecpt_SetInputScale: failed"
+        GoTo Failed_P
+    End If
+        
+Passed_P:
+    Boecpt_SetInputScale= True
+    Exit Function
+Failed_P:
+    Boecpt_SetInputScale = False
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+[PostSub_Boecpt_SetInputScale]
+
+'''''''''''''''''''''''''''''''''''''''''''
+
+[Desc_Boecpt_SetBuffetScale]
+OverView:
+    Set the cpt Buffet scale factor.
+
+Parameters:
+    sngScale: >0.  Default=0.44
+
+Remarks:
+    Higher values cause more buffetting force to be applied.
+
+[PreSub_Boecpt_SetBuffetScale]
+
+[Sub_Boecpt_SetBuffetScale]
+
+Public Function Boecpt_SetBuffetScale(sngScale as single) As Boolean
+    On Error GoTo Error_P
+
+    If Not m_Boecpt_boolOK Then
+        GoTo Passed_P
+    End If
+
+    If BoecptDLL_SetBuffetScale( sngScale) <> g_BOE_PASSED Then
+        MsgBox "Boecpt_SetBuffetScale: failed"
+        GoTo Failed_P
+    End If
+        
+Passed_P:
+    Boecpt_SetBuffetScale= True
+    Exit Function
+Failed_P:
+    Boecpt_SetBuffetScale = False
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+[PostSub_Boecpt_SetBuffetScale]
+
+'''''''''''''''''''''''''''''''''''''''''''
+
+[Desc_Boecpt_SetM]
+OverView:
+    Set the cpt target "mass".
+
+Parameters:
+    sng: >0.  Default=1.0
+
+Remarks:
+    Natural frequency: k/m.  Damping ratio: sqrt(c * c - 4mk)
+	
+
+[PreSub_Boecpt_SetM]
+
+[Sub_Boecpt_SetM]
+
+Public Function Boecpt_SetM(sng as single) As Boolean
+    On Error GoTo Error_P
+
+    If Not m_Boecpt_boolOK Then
+        GoTo Passed_P
+    End If
+
+    If BoecptDLL_SetM( sng) <> g_BOE_PASSED Then
+        MsgBox "Boecpt_SetM: failed"
+        GoTo Failed_P
+    End If
+        
+Passed_P:
+    Boecpt_SetM= True
+    Exit Function
+Failed_P:
+    Boecpt_SetM = False
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+[PostSub_Boecpt_SetM]
+
+'''''''''''''''''''''''''''''''''''''''''''
+
+[Desc_Boecpt_SetC]
+OverView:
+    Set the cpt target "screen friction constant".
+
+Parameters:
+    sng: >0.  Default=3.0
+
+Remarks:
+    Natural frequency: k/m.  Damping ratio: sqrt(c * c - 4mk)
+	
+
+[PreSub_Boecpt_SetC]
+
+[Sub_Boecpt_SetC]
+
+Public Function Boecpt_SetC(sng as single) As Boolean
+    On Error GoTo Error_P
+
+    If Not m_Boecpt_boolOK Then
+        GoTo Passed_P
+    End If
+
+    If BoecptDLL_SetC( sng) <> g_BOE_PASSED Then
+        MsgBox "Boecpt_SetC: failed"
+        GoTo Failed_P
+    End If
+        
+Passed_P:
+    Boecpt_SetC= True
+    Exit Function
+Failed_P:
+    Boecpt_SetC = False
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+[PostSub_Boecpt_SetC]
+
+'''''''''''''''''''''''''''''''''''''''''''
+
+[Desc_Boecpt_SetK]
+OverView:
+    Set the cpt user's spring constant.
+
+Parameters:
+    sng: >0.  Default=0.5. higher values give more "pull" on target
+
+Remarks:
+    Natural frequency: k/m.  Damping ratio: sqrt(c * c - 4mk)
+	
+
+[PreSub_Boecpt_SetK]
+
+[Sub_Boecpt_Setk]
+
+Public Function Boecpt_SetK(sng as single) As Boolean
+    On Error GoTo Error_P
+
+    If Not m_Boecpt_boolOK Then
+        GoTo Passed_P
+    End If
+
+    If BoecptDLL_SetK( sng) <> g_BOE_PASSED Then
+        MsgBox "Boecpt_SetK: failed"
+        GoTo Failed_P
+    End If
+        
+Passed_P:
+    Boecpt_SetK= True
+    Exit Function
+Failed_P:
+    Boecpt_SetK = False
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+[PostSub_Boecpt_SetK]
+
+''''''''''''''''''''''''''''''''''''''''''''''''
+
+[Desc_Boecpt_GetNextPoint]
+OverView:
+    Given mouse coorinates, get the next target point based upon various forces.
+
+Parameters:
+    lngMouseX: current XPos, lngMouseY: current YPos, ByRef lngNextX: next target XPos, ByRef lngNextY:Next target YPos, 
+    ByRef sngDistance:How far away the target is from Bullseye in disk radii, Byref lngMillisec: time stamp for point,
+    ByVal boolStore: whether to save tracking point
+
+Remarks:
+   
+[PreSub_Boecpt_GetNextPoint]
+
+[Sub_Boecpt_GetNextPoint]
+
+Public Function Boecpt_GetNextPoint(lngMillisec as long, lngMouseX as long, lngMouseY as long, ByRef lngNextX as long, _
+             ByRef lngNextY as long, ByRef sngDistance as single, ByVal boolStore as boolean) As Boolean
+    On Error GoTo Error_P
+
+    If Not m_Boecpt_boolOK Then
+        GoTo Passed_P
+    End If
+
+    If BoecptDLL_GetNextPoint( lngMillisec, lngMouseX, lngMouseY, lngNextX, lngNextY, sngDistance, boolStore) <> g_BOE_PASSED Then
+        MsgBox "Boecpt_GetNextPoint: failed"
+        GoTo Failed_P
+    End If
+        
+Passed_P:
+    Boecpt_GetNextPoint= True
+    Exit Function
+Failed_P:
+    Boecpt_GetNextPoint = False
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+[PostSub_Boecpt_GetNextPoint]
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''
+
+
+[Desc_Boecpt_ResetTracks]
+OverView:
+    Resets the tracking info to empty state.
+
+Parameters:
+    none
+
+Remarks:
+   
+[PreSub_Boecpt_ResetTracks]
+
+[Sub_Boecpt_ResetTracks]
+
+Public Function Boecpt_ResetTracks() As Boolean
+    On Error GoTo Error_P
+
+    If Not m_Boecpt_boolOK Then
+        GoTo Passed_P
+    End If
+
+    If BoecptDLL_ResetTracks() <> g_BOE_PASSED Then
+        MsgBox "Boecpt_ResetTracks: failed"
+        GoTo Failed_P
+    End If
+        
+Passed_P:
+    Boecpt_ResetTracks = True
+    Exit Function
+Failed_P:
+    Boecpt_ResetTracks = False
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+[PostSub_Boecpt_ResetTracks]
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''
+
+[Desc_Boecpt_LogTracks]
+OverView:
+    Write the tracking info to the specified file.
+
+Parameters:
+    lpszPath:path to log file.
+    lpszHeader:first line in log file.  User defined.
+
+Remarks:
+   
+[PreSub_Boecpt_LogTracks]
+
+[Sub_Boecpt_LogTracks]
+
+Public Function Boecpt_LogTracks(ByVal lpszPath as string, ByVal lpszHeader as string) As Boolean
+    On Error GoTo Error_P
+
+    If Not m_Boecpt_boolOK Then
+        GoTo Passed_P
+    End If
+
+    If BoecptDLL_LogTracks( lpszPath, lpszHeader) <> g_BOE_PASSED Then
+        MsgBox "Boecpt_LogTracks: failed"
+        GoTo Failed_P
+    End If
+        
+Passed_P:
+    Boecpt_LogTracks = True
+    Exit Function
+Failed_P:
+    Boecpt_LogTracks = False
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+[PostSub_Boecpt_LogTracks]
+
+''''''''''''''''''''''''''''''''''''
+
+[Desc_Boecpt_LogDistanceStats]
+OverView:
+    Write the distance stats to the specified file.
+
+Parameters:
+    lpszPath:path to log file.
+    lpszHeader:first line in log file.  User defined.
+    boolCalc: True=recalculate from tracking info. false=use last calc'd values
+
+Remarks:
+   
+[PreSub_Boecpt_LogDistanceStats]
+
+[Sub_Boecpt_LogDistanceStats]
+
+Public Function Boecpt_LogDistanceStats(ByVal lpszPath as string, ByVal lpszHeader as string, ByVal boolCalc as boolean) As Boolean
+    On Error GoTo Error_P
+
+    If Not m_Boecpt_boolOK Then
+        GoTo Passed_P
+    End If
+
+    If BoecptDLL_LogDistanceStats( lpszPath, lpszHeader, boolCalc) <> g_BOE_PASSED Then
+        MsgBox "Boecpt_LogDistanceStats: failed"
+        GoTo Failed_P
+    End If
+        
+Passed_P:
+    Boecpt_LogDistanceStats = True
+    Exit Function
+Failed_P:
+    Boecpt_LogDistanceStats = False
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+[PostSub_Boecpt_LogDistanceStats]
+'''''''''''''''''''''''''''''''''''''''''''''''''''
+
+[Desc_Boecpt_GetDistanceStats]
+OverView:
+    Retrieve the statistics for the disk distance.
+
+Parameters:
+    boolCalc: true=recalc distance stats
+
+Remarks:
+   
+[PreSub_Boecpt_GetDistanceStats]
+
+[Sub_Boecpt_GetDistanceStats]
+
+Public Function Boecpt_GetDistanceStats ( ByRef lngCount as long, ByRef dblMin as double, ByRef dblMax as double, _
+                  ByRef dblMedian as double, ByRef dblAve As Double, ByRef dblAveDev As Double, _
+                  ByRef dblStdDev As Double, ByRef dblStdVar As Double, ByRef dblSkew As Double, _
+                  ByRef dblKurt As Double, ByVal boolCalc as boolean) As boolean
+    On Error GoTo Error_P
+
+    If Not m_Boecpt_boolOK Then
+        GoTo Passed_P
+    End If
+
+    If BoecptDLL_GetDistanceStats( lngCount, dblMin, dblMax, dblMedian, dblAve, dblAveDev, _
+                dblStdDev, dblStdVar, dblSkew, dblKurt, boolCalc) <> g_BOE_PASSED Then
+        MsgBox "Boecpt_GetDistanceStats: failed"
+        GoTo Failed_P
+    End If
+        
+Passed_P:
+    Boecpt_GetDistanceStats = True
+    Exit Function
+Failed_P:
+    Boecpt_GetDistanceStats = False
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+[PostSub_Boecpt_GetDistanceStats]
+
+
+[InitPackages]
+
+
+[UnInitPackages]
+
+
+[Info_Boecpt]
+
+
+

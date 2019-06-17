@@ -1,0 +1,1066 @@
+
+' Boe stuff for Dr. Barry Oken
+' Contact Roger Ellingson, Dan Zajdel, 503.297.5044, rogere@rmegen.net
+' unpublished copyright, 02/24/2003
+
+[Header]
+PackageName="Boe_selectboxbkbeta1"
+Description="Barry Oken General Eprime Support lib"
+VersionMajor=4
+VersionMinor =3
+VersionInternal=3
+VersionRevision=3
+
+[Global]
+
+'''''''Boe.epk'''''''''''''''''''''''''''''''''''''''
+
+'''''''Meta Data Data Definitions ''''''''
+
+const Boe_PackageName As String ="boe.epk"
+const Boe_PackageVersion As String ="4.3"
+const Boe_PackageDate As String ="04/01/2003"
+const Boe_PackageComments As String ="Select Box for SubjectID, TestID"
+
+'''''''''''''''''''''''''''''''''''''''''''
+
+
+'Boe specific meta
+Public g_Boe_PackageMetaElemObj as ElemObjType
+Declare Public sub Boe_SetPackageMetaData()
+Declare Public sub Boe_InitBoeMetaData()
+
+
+''''''''''''''''''''''''''''''''''''''''''''
+
+
+Const crlf = Chr$(13) + Chr$(10)
+
+
+Const g_BOE_FAILED As Long = -1
+Const g_BOE_PASSED As Long = 0
+
+Public g_Boe_boolDebug As Boolean  ' true = display debug messages
+Public g_Boe_boolUseNI As Boolean ' true=Try to use NI board
+Public g_Boe_boolUseScan As Boolean ' true=Try to use ISCAN instrument
+Public g_Boe_boolCalcRefresh As Boolean ' true = calculate display VR time
+
+Public g_Boe_lngScanPortNum as long ' Scan Port Number, 1 = Comm0, 2 = Comm1, etc.
+Public g_Boe_lngScanBaudRate as long ' Scan Port BaudRate in bps
+Public g_Boe_dblScanMaxScanPeriodSec as double ' Scan Max scanning period in sec
+
+Public g_Boe_lngVRInterval As Long
+Public GASN As Long  ' Global Actual Sequence Number
+Public GNUM As Long ' current g_Boe_group number
+Public BNUM As Long ' current g_Boe_block number
+Public BLNUM As Long ' BlockListNum
+Public BCNUM As Long ' BlockCycleNum
+Public BSNUM As Long ' BlockSampleNum
+Public SGNUM As Long ' SampleList Group Num
+Public SCNUM As Long ' SampleCycleNum
+Public SSNUM As Long ' SampleSampleNum
+Public SLNUM As Long ' SampleListNum
+
+Public g_Boe_strExperimentID As String
+Public g_Boe_strSessionID As String
+Public g_Boe_strBlockID As String ' current BlockID
+Public g_Boe_boolSelectBox As Boolean
+
+Const g_Boe_lngNumCatIDMax = 8
+Public g_Boe_lngNumCatID as long
+Const g_Boe_lngNumRTInputMax = 3 ' max number of RESP CRESP pairs
+
+Public g_Boe_dbl As Double
+Public g_Boe_sng As Single
+Public g_Boe_sng2 As Single
+Public g_Boe_sng3 As Single
+Public g_Boe_int As Integer
+Public g_Boe_lng As Long
+Public g_Boe_lng2 As Long
+Public g_Boe_lng3 As Long
+Public g_Boe_lng4 As Long
+Public g_Boe_str As String
+Public g_Boe_str2 As String
+Public g_Boe_str3 As String
+Public g_Boe_str4 As String
+Public g_Boe_bool As Boolean
+Public g_Boe_strSubjectID As String
+Public g_Boe_strTestID As String
+
+Public g_Boe_boolResp(1 To 3) As Boolean ' true=RESP detected, false=no resp
+Public g_Boe_boolWinResp(1 To 3) As Boolean ' true=windowed resp detected, false=resp outside of window
+Public g_Boe_boolCResp(1 To 3) As Boolean ' true=CRESP, false=incorrect resp
+Public g_Boe_boolWinCResp(1 To 3) As Boolean ' true=windowed CRESP
+Const g_Boe_lngNULL = -9999999 ' empty, not tested yet, etc.
+Const g_Boe_sngNULL = -999999.99 ' empty, not tested yet, etc.
+Const g_Boe_sngCorrectRESP = 1#
+Const g_Boe_sngIncorrectRESP = 0#
+Public g_Boe_dblVal As Double
+
+Public g_Boe_sngVRInterval As Single ' average value of VR interval
+Public g_Boe_strSampleID As String ' current SampleID
+Public g_Boe_boolStop As Boolean
+Public g_Boe_boolInterrupted As Boolean ' Program was stopped then resumed
+Public g_Boe_lngStartTime(1 To 4) As Long
+Public g_Boe_lngStopTime(1 To 4) As Long
+
+Type BoeObjType
+	strID as string
+	strTypeID as string
+	dblTrigLevel as double
+	dblTrigWidth as double
+	boolDBLink as boolean
+	strData1ID as string
+	strData1Data as string
+	strData2ID as string
+	strData2Data as string
+	strData3ID as string
+	strData3Data as string
+	strData4ID as string
+	strData4Data as string
+end type
+
+Const g_Boe_lngMAXBoeObj = 10
+Public g_Boe_BoeObj(1 to g_Boe_lngMaxBoeObj) as BoeObjType
+Public g_Boe_lngNumBoeObj as Long
+Declare Public sub Boe_InitBoeXmlFileMeta(strXmlComments as string)
+Declare Public sub Boe_InitBoeObj(lngNum as long, strID as string, strTypeID as string, _
+	                 boolDBLink as boolean, dblTrigLevel as double, _
+                       dblTrigWidth as double, strData1ID as string, _
+                       strData2ID as string, strData3ID as string, _
+			     strData4ID as string ) 
+
+Declare Sub Sleep Lib "kernel32" (ByVal millisec as Long)
+
+Declare Public sub Boe_DebugMsg( strMsg as String)
+Declare Public sub Boe_CalcRefreshRate()
+
+'Declare Public sub Boe_Init()
+Declare Public sub Boe_Init(Optional version as Variant)
+Declare Public Function Boe_GetSubjectID() As String 'Get the subjectid from a SubjectID.txt file
+Declare Public Function Boe_GetTestID()    As String  'Get the testid from a <>TestID.txt file.
+Declare Public sub Boe_oldOpen()  'Pre Boe.epk version 4 open subroutine
+Declare Public sub Boe_currentOpen() 'current and post Boe.epk version 4 subroutine
+Declare Public sub Boe_Open(Optional version as Variant)
+Declare Public sub Boe_Close()
+Declare Public Function Boe_Stop( obj as TextDisplay) As Boolean
+''''''''End Boe.epk Globals''''''''''''''''''''''''''''
+
+''''''''''''''''''''''''''''''''''''
+'Meta Data Related Code
+''''''''''''''''''''''''''''''''''''
+[Desc_Boe_InitBoeMetaData]
+OverView:
+    Open and initialize packages.
+
+Parameters:
+    None.
+
+Remarks:
+    Assumes Boe, Boexml, and Boeni are available.
+
+[Sub_Boe_InitBoeMetaData]
+
+Sub Boe_InitBoeMetaData()
+    On Error GoTo Error_P
+
+    g_Boexml_lngBoeMetaElemObjN  = 1
+
+    Boe_SetPackageMetaData
+    Boefile_SetPackageMetaData
+    Boeni_SetPackageMetaData
+    Boescan_SetPackageMetaData
+    'Boestat_SetPackageMetaData
+    Boexml_SetPackageMetaData
+
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boe_InitBoeMetaData failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+
+''''''''''''''''''''''''''''''''''''
+
+
+[Desc_Boe_SetPackageMetaData]
+Overview:
+	
+Parameters:
+
+Remarks:
+
+[PreSub_Boe_SetPackageMetaData]
+
+[Sub_Boe_SetPackageMetaData]
+
+Sub Boe_SetPackageMetaData()
+    On Error Goto Error_P
+
+    Dim lngAttribItem as long, lngAttribTot as long
+    Dim lngElemItem as long
+ 
+    g_Boe_PackageMetaElemObj.strName="PackageInfo"
+    g_Boe_PackageMetaElemObj.boolAttrib=true
+
+    lngAttribItem=1
+    g_Boe_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Name"
+    g_Boe_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boe_PackageName
+
+    lngAttribItem= lngAttribItem + 1
+    g_Boe_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Version"
+    g_Boe_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boe_PackageVersion
+
+    lngAttribItem = lngAttribItem + 1
+    g_Boe_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Date"
+    g_Boe_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boe_PackageDate
+
+    lngAttribItem = lngAttribItem + 1
+    g_Boe_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Comments"
+    g_Boe_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boe_PackageComments
+
+   
+    lngAttribTot=lngAttribItem
+   
+    lngElemItem = g_Boexml_lngBoeMetaElemObjN
+
+    Boexml_SetElemObjItem lngAttribTot, g_Boe_PackageMetaElemObj, _
+                          g_Boexml_arrBoeMetaElemObj(lngElemItem)
+
+    g_Boexml_lngBoeMetaElemObjN = g_Boexml_lngBoeMetaElemObjN + 1
+
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boe_SetPackageMetaData failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+
+End Sub
+
+
+
+''''''''''''''''''''''''''''''''''''
+''''''''''''''''''''''''''''''''''''
+'Boe specific Code 
+''''''''''''''''''''''''''''''''''''
+
+[Desc_Boe_OpenBoeObj]
+Overview:
+	
+Parameters:
+
+Remarks:
+
+[PreSub_Boe_OpenBoeObj]
+
+[Sub_Boe_OpenBoeObj]
+
+Sub Boe_OpenBoeObj
+	On Error Goto Error_P
+
+	Dim n as long
+
+	g_Boe_lngNumBoeObj = 0
+
+	For n = 1 to g_Boe_lngMaxBoeObj
+		g_Boe_BoeObj(n).strid = ""
+		g_Boe_BoeObj(n).strTypeID = ""
+		g_Boe_BoeObj(n).dblTrigLevel = 0.0
+		g_Boe_BoeObj(n).dblTrigWidth = 0.0
+		g_Boe_BoeObj(n).boolDBLink = True  'for now always want to link in the data
+		g_Boe_BoeObj(n).strData1ID = ""
+		g_Boe_BoeObj(n).strData1Data = ""
+		g_Boe_BoeObj(n).strData2ID = ""
+		g_Boe_BoeObj(n).strData2Data = ""
+		g_Boe_BoeObj(n).strData3ID = ""
+		g_Boe_BoeObj(n).strData3Data = ""
+		g_Boe_BoeObj(n).strData4ID = ""
+		g_Boe_BoeObj(n).strData4Data = ""
+
+	Next
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boe_OpenBoeObj failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+
+End Sub
+
+[PostSub_Boe_OpenBoeObj]
+
+''''''''''''''''''''''''''''''''''''
+
+[Desc_Boe_InitBoeObj]
+Overview:
+	Initialize member of Boe Obj.
+Parameters:
+	
+
+Remarks:
+
+
+[PreSub_Boe_InitBoeObj]
+
+[Sub_Boe_InitBoeObj]
+
+Sub Boe_InitBoeObj(lngNum as long, strID as string, strTypeID as string, _
+	                 boolDBLink as boolean, dblTrigLevel as double, _
+                       dblTrigWidth as double, strData1ID as string, _
+                       strData2ID as string, strData3ID as string, strData4ID as string) 
+	On Error Goto Error_P
+
+	Dim boolPassed as boolean
+
+	boolPassed = False
+
+	If lngNum < 1 or lngNum > g_Boe_lngMaxBoeObj then
+		GoTo Failed_P
+	end if
+
+	If g_Boe_BoeObj(lngNum).strID = "" then
+		g_Boe_lngNumBoeObj = g_Boe_lngNumBoeObj + 1
+	end if
+
+	g_Boe_BoeObj(lngNum).strID = strID
+	g_Boe_BoeObj(lngNum).strTypeID = strTypeID
+	g_Boe_BoeObj(lngNum).dblTrigLevel = dblTrigLevel
+	g_Boe_BoeObj(lngNum).dblTrigWidth = dblTrigWidth
+	g_Boe_BoeObj(lngNum).boolDBLink = boolDBLink
+	g_Boe_BoeObj(lngNum).strData1ID = strData1ID
+	g_Boe_BoeObj(lngNum).strData2ID = strData2ID
+	g_Boe_BoeObj(lngNum).strData3ID = strData3ID
+	g_Boe_BoeObj(lngNum).strData4ID = strData4ID
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boe_InitBoeObj failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+
+
+End Sub
+
+[PostSub_Boe_InitBoeObj]
+
+
+[Desc_Boe_DebugMsg]
+OverView:
+    Display msgbox and wait for dismissal.
+
+Parameters:
+    strMsg to display.
+
+Remarks:
+    None.
+
+[PreSub_Boe_DebugMsg]
+
+[Sub_Boe_DebugMsg]
+
+Sub Boe_DebugMsg(strMsg As String)
+    On Error GoTo Error_P
+
+    If g_Boe_boolDebug Then
+        MsgBox strMsg, ebOKOnly, g_Boe_strExperimentID
+    End If
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boe_DebugMsg failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+[PostSub_Boe_DebugMsg]
+
+''''''''''''''''''''''''''''''''''
+
+
+[Desc_Boe_CalcRefreshRate]
+OverView:
+    Calculate  VR interval based upon measured refresh rate.
+
+Parameters:
+    None.
+
+Remarks:
+    g_Boe_sngVRInterval = (1.0 / dblRefreshRate) * 1000.0).
+    
+    Display results if g_Boe_boolDebug=True.
+
+[PreSub_Boe_CalcRefreshRate]
+
+[Sub_Boe_CalcRefreshRate]
+
+Sub Boe_CalcRefreshRate()
+    On Error GoTo Error_P
+    Dim nTotalTime As Long
+    Dim nRefreshCnt As Long
+    Dim nErrorCnt As Long
+    Dim dblRefreshRate As Double
+    Const refreshmin As Long = 20
+    Dim RefreshMissCount As Long
+    Dim sumRefreshDuration As Summation
+    Set sumRefreshDuration = New Summation
+    Dim sumBlankingDuration As Summation
+    Set sumBlankingDuration = New Summation
+    'g_Boe_lngVRInterval = 11
+     nRefreshCnt = 1000  ' NOTE some of the following calculations currently assume/require 1000 refreshes
+     display.CalcActualRefreshRate nRefreshCnt, refreshmin, sumRefreshDuration, sumBlankingDuration, nTotalTime, RefreshMissCount, nErrorCnt
+     dblRefreshRate = (1# / (sumRefreshDuration.Mean / CDbl(nRefreshCnt)) * 1000#)
+         'c.SetAttrib "RefreshMax", Format$( (sumRefreshDuration.Max / 1000.0), "###0.####")
+         'c.SetAttrib "RefreshTime", Format$( (sumRefreshDuration.Mean / 1000.0), "###0.####")
+         'c.SetAttrib "BlankMin",   Format$( (sumBlankingDuration.Min / 1000.0), "###0.####")
+        ' c.SetAttrib "RefreshMissCount", Cstr(RefreshMissCount)
+         'c.SetAttrib "ErrorCount",  Cstr(nErrorCnt)
+         'c.SetAttrib "BlankMissPercent", Format$(RefreshMissCount*100.0/1000.0, "###0.0###") 'Get Blank miss percent
+    ' log the number of refresh rate we calculated
+     'c.SetAttrib "RefreshRate", Format$( dblRefreshRate, "###0.####" )
+     'c.SetAttrib "RefreshSD", Format$( sumRefreshDuration.StdDevP/1000.0, "#0.0##" )
+    g_Boe_sngVRInterval = CSng((1# / dblRefreshRate) * 1000#)
+    'g_Boe_lngVRInterval = CLng((1.0/dblRefreshRate)*1000.0)
+    'if CSng(g_Boe_lngVRInterval) > g_Boe_sng then
+    '   g_Boe_lngVRInterval = g_Boe_lngVRInterval - 1
+    'end if
+    g_Boe_str = "Refresh rate:" & CStr(Format(dblRefreshRate, "0.00")) & " Hz" & _
+                  " = " & CStr(Format((1# / dblRefreshRate) * 1000#, "0.00")) & " ms" & ebcrlf & _
+                      "Boe will use " & CStr(Format(g_Boe_sngVRInterval, "0.00")) & "ms for VRInterval" '& ebCrLf & _
+    Boe_DebugMsg g_Boe_str
+    'MsgBox g_Boe_str
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boe_CalcRefreshRate failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+''''''''''''''''''''''''''''''''''''
+
+[Desc_BoeInit]
+OverView:
+    Open and initialize packages.
+
+Parameters:
+    None.
+
+Remarks:
+    Assumes Boe, Boexml, and Boeni are available.
+
+[Sub_Boe_Init]
+
+Sub Boe_Init(Optional version as Variant)
+    On Error GoTo Error_P
+
+
+    'if xml package 4.0 and greater then log meta data info
+    if Not IsMissing(version) then
+      if version >= 4 then 
+         Boe_InitBoeMetaData
+         g_Boe_boolSelectBox = True
+      end if 
+    end if 
+
+    Boe_OpenBoeObj
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boe_Init failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+
+[Desc_Boe_Open]
+OverView:
+    Open and initialize packages.
+
+Parameters:
+    version  -version of package, determines what code to turn 
+              on and off depending on version of boe package.
+		  optional parameter so this change won't affect previous
+              experiments.
+
+Remarks:
+    Assumes Boe, Boexml, and Boeni are available.
+
+[Sub_Boe_Open]
+Sub Boe_Open(Optional version as Variant)
+
+    On Error GoTo Error_P
+    
+    if Not IsMissing(version) then
+      if version < 4 then 
+        Boe_oldOpen
+      else
+        Boe_currentOpen
+      end if
+    else
+        Boe_oldOpen
+    end if 
+
+    Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boe_Open failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+[Desc_Boe_currentOpen]
+OverView:
+    Open and initialize package. The current indicates that this 
+    is the most up to date working version of the Boe Open function.
+    This is to distinguish from versions of Boe Open pre-dating 
+    the changes made to the packages for Boe Object. 
+
+Parameters:
+    
+Remarks:
+    Assumes Boe, Boexml, and Boeni are available.
+
+[Sub_Boe_currentOpen]
+Sub Boe_currentOpen()
+    On Error GoTo Error_P
+
+    g_Boe_boolStop = False
+
+    if g_Boe_lngNumCatID <= 0 then
+        g_Boe_lngNumCatID = g_Boe_lngNumCatIDMax
+    end if
+
+    if g_Boe_lngNumCatID > g_Boe_lngNumCatIDMax then
+        g_Boe_lngNumCatID = g_Boe_lngNumCatIDMax
+    end if
+
+    GASN = 0
+    g_Boe_strBlockID = "not initialized"
+    GNUM = 0
+    BNUM = 0
+    BCNUM = 0
+    BSNUM = 0
+    SCNUM = 0
+    SSNUM = 0
+    
+    g_Boe_strExperimentID = ebContext.GetAttrib("Experiment")
+    g_Boe_strSessionID = g_Boe_strExperimentID
+
+    IF g_Boe_boolDebug Then
+	    If MsgBox("Do you wish to display debug messages?", ebYesNo, g_Boe_strExperimentID) = ebYes Then
+      	  g_Boe_boolDebug = True
+	    End If
+    End If
+
+    If g_Boe_boolUseNI Then
+        If Not Boeni_Open() Then
+            MsgBox "Boeni_Open failed."
+            'g_Boe_boolUseNI = False
+        End If
+    End If
+
+    If g_Boe_boolUseScan Then
+        If Not Boescan_Open( g_Boe_lngScanPortNum, g_Boe_lngScanBaudRate, _
+                 g_Boe_dblScanMaxScanPeriodSec) Then
+            MsgBox "Boescan_Open failed."
+            'g_Boe_boolUseScan = False
+        End If
+    End If
+    
+    g_Boexml_boolLog = True
+    If g_Boexml_boolLog Then
+        Do
+
+          If (g_Boe_boolSelectBox) Then 
+            'g_Boe_strSubjectID = get_AskBox("Please enter the SubjectID:", "s1", g_Boe_strExperimentID)
+             g_Boe_strSubjectID = Boe_GetSubjectID()    'Get SubjectID from SelectBox
+
+
+             If IsEmpty(g_Boe_strSubjectID) Then
+                g_Boe_strSubjectID = "NSID"
+                g_Boexml_boolLog = False
+                Exit Do
+             End If
+        
+             If g_Boexml_boolLog Then
+
+		   'g_Boe_strTestID = AskBox("Please enter the TestID:", "t1", g_Boe_strExperimentID)
+                g_Boe_strTestID = Boe_GetTestID()       'Get TestID from SelectBox
+
+                If IsEmpty(g_Boe_strTestID) Then
+                    g_Boe_strTestID = "NTID"
+                    g_Boexml_boolLog = False
+                    Exit Do
+                End If
+             End If
+            Else
+
+             g_Boe_strSubjectID = AskBox("Please enter the SubjectID:", "s1", g_Boe_strExperimentID)
+             If IsEmpty(g_Boe_strSubjectID) Then
+                g_Boe_strSubjectID = "NSID"
+                g_Boexml_boolLog = False
+                Exit Do
+             End If
+        
+             If g_Boexml_boolLog Then
+                g_Boe_strTestID = AskBox("Please enter the TestID:", "t1", g_Boe_strExperimentID)
+                If IsEmpty(g_Boe_strTestID) Then
+                    g_Boe_strTestID = "NTID"
+                    g_Boexml_boolLog = False
+                    Exit Do
+                End If
+             End If
+           End If 
+
+
+            g_Boexml_strFilePath = g_Boe_strExperimentID & "_" & g_Boe_strSubjectID _
+                 & "_" & g_Boe_strTestID & ".xml"
+            
+            If FileExists(g_Boexml_strFilePath) Then
+                If MsgBox("Overwrite [" & g_Boexml_strFilePath & "] ?", ebYesNo, g_Boe_strExperimentID) = ebYes Then
+                    Kill g_Boexml_strFilePath
+                    Exit Do
+                End If
+            Else
+                Exit Do
+            End If
+        Loop
+    End If
+
+    If g_Boexml_boolLog Then
+        If Not Boexml_Open(g_Boexml_strFilePath, 4) Then  'need to pass version here
+									    'to distinguish old and new
+									    'Boexml code.
+            MsgBox "Boexml_Open '" & g_Boexml_strFilePath & "' failed"
+            g_Boexml_boolLog = False
+        End If
+    End If
+    If Not g_Boexml_boolLog Then
+        MsgBox "No Boe data will be logged."
+    End If 
+
+    'Log the General Boe ExperimentInformation
+  
+     Boexml_LogBoeGenExpInfo g_Boexml_intLevelSubSession
+
+    'Log Calibration Information
+     Boexml_LogCalibration g_Boexml_intLevelSubSession
+
+    'Log Boe Config Information
+
+     Boexml_LogBoeConfig g_Boexml_intLevelSubSession
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boe_Open failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+
+
+
+
+
+[Desc_Boe_Close]
+OverView:
+    Cleanup and close packages.
+
+Parameters:
+        None.
+
+Remarks:
+        None.
+
+[PreSub_Boe_Close]
+
+[Sub_Boe_Close]
+
+Sub Boe_Close()
+    On Error GoTo Error_P
+
+    Call Boexml_Close
+
+    If Not Boeni_Close() Then
+        MsgBox "Boeni_Close failed"
+    End If
+
+    if not Boescan_Close() then
+        msgbox "Boescan_Close failed"
+    end if
+    
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boe_Close failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+[Desc_Boe_Stop]
+OverView:
+        Interrupt testing, offer opportunity to quit or resume.
+
+Parameters:
+        None.
+
+Remarks:
+        Assumes STOP1 object is included in experiement.
+
+        Sets g_Boe_boolStop=True if quit is selected.
+
+        Returns value of g_Boe_boolStop
+
+[PreSub_Boe_Stop]
+
+[Sub_Boe_Stop]
+
+Function Boe_Stop(obj As TextDisplay) As Boolean
+    On Error GoTo Error_P
+
+    If obj Is Nothing Then
+        GoTo Passed_P
+    End If
+
+    If Not g_Boe_boolStop Then
+        If obj.RT > 0 Then
+            If MsgBox("Do you wish to continue testing?", ebYesNo, "Experiment stopped") = ebNo Then
+                g_Boe_boolStop = True
+            Else
+                Boe_DebugMsg "BoeStop() Resuming"
+                g_Boe_boolStop = False
+                g_Boe_boolInterrupted = True
+                'Set obj.input = Nothing
+                'Set obj.input = Keyboard("qQ", "", Val("-1"), Val("1"), ebInputActionNone, CLogical("No"), "", "flush:Yes")
+                obj.InputMasks.Reset
+	          'set obj.InputMasks.Add Keyboard.CreateInputMask("q", "", val("-1"), Val("1"), _
+                '   ebEndResponseActionNone, True, "", "", "")
+	          obj.InputMasks.Add Keyboard.CreateInputMask("qQ", "", val("-1"), Val("1"), _
+                   ebEndResponseActionNone, True, CLogical("No"), "", "flush:Yes")
+                obj.Run
+            End If
+        End If
+    End If
+Passed_P:
+    Boe_Stop = g_Boe_boolStop
+    Exit Function
+Failed_P:
+    MsgBox "Boe_Stop failed"
+    Boe_Stop = g_Boe_boolStop
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+
+
+''''''''''''''''''''''''''''''''
+[Desc_Boe_GetSubjectID]
+OverView:
+        This function brings up 2 boxes.  The first is a box from which 
+the user should choose a file that lists the subject ids for a particular
+experiment.  Once selected, that file is opened and its contents are displayed in 
+a select box.  It is then up to the user to select the appropriate SubjectID
+for this run of the experiment.  
+
+Parameters:
+        None.
+
+Remarks:
+       
+
+[PreSub_Boe_GetSubjectID]
+
+[Sub_Boe_GetSubjectID]
+
+Function Boe_GetSubjectID() As String
+    On Error GoTo Error_P
+
+    Dim strSFName As String, intSFileNum As Integer
+    Dim strSBuffer As String
+    Dim i As Integer, intSResult As Integer 
+    Dim arrSubjectID(500) As String, strSubjectIDtrim  As String
+
+    intSFileNum=FreeFile		'assign available n umber to intSFileNum
+
+    'Open up Choice box for selecting file.
+
+    strSFName$ = OpenFileName$("Please select a text file that lists the experiment SubjectIDs.","Text Files:*.TXT")
+   
+    i = 0
+
+    
+    'If Not FileExists(strSFName$) Then 
+    '   MsgBox("The file: " & strSubFName$ & "does not exist! Please try one more time.")
+    '   strSubFName$ = OpenFileName$("Please select a text file that lists the experiment SubjectIDs.","Text Files:*.TXT")
+    'End If
+
+    'Open file 
+    Open strSFName$ For Input As #intSFileNum
+
+    'Extract Data from File
+
+    While Not EOF(intSFileNum)
+      Line Input #intSFileNum, strSBuffer
+      arrSubjectID(i) = strSBuffer
+      i = i + 1
+    Wend
+   
+    Close intSFileNum
+
+     'Display array contents in the SelectBox
+
+    intSResult% = SelectBox(g_Boe_strExperimentID,"Please choose a SubjectID:",arrSubjectID$)
+    strSubjectIDtrim = Trim$(arrSubjectID$(intSResult%))  'Trim off leading and trailing spaces
+
+    If intSResult% = -1 then
+          GoTo Error_P
+    End If
+
+Passed_P:
+    Boe_GetSubjectID = strSubjectIDtrim
+    Exit Function
+Failed_P:
+    MsgBox "Boe_GetSubjectID failed"
+    Boe_GetSubjectID = ""
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+[Desc_Boe_GetTestID]
+OverView:
+               This function brings up 2 boxes.  The first is a box from which 
+the user should choose a file that lists the subject ids for a particular
+experiment.  Once selected, that file is opened and its contents are displayed in 
+a select box.  It is then up to the user to select the appropriate SubjectID
+for this run of the experiment.  
+
+Parameters:
+        None.
+
+Remarks:
+       
+
+[PreSub_Boe_GetTestID]
+
+[Sub_Boe_GetTestID]
+
+Function Boe_GetTestID() As String
+    On Error GoTo Error_P
+
+    Dim strTFileName As String, intTFileNum As Integer
+    Dim strTBuffer As String
+    Dim j As Integer, intTResult  As Integer 
+    Dim arrTestIDDesc(30) As String, strTestID As String
+    Dim strTestIDtmp As String, strTestIDtrim As String 
+
+    intTFileNum=FreeFile
+
+    strTFileName$ = OpenFileName$("Please select a text file that lists the experiment TestIDs.","Text Files:*.TXT")
+
+    j  = 0
+ 
+    Open strTFileName$ For Input As #intTFileNum  'assign available n umber to intTFileNum
+
+    'Open up Choice box for selecting file.
+
+    
+    While Not EOF(intTFileNum)
+      Line Input #intTFileNum, strTBuffer
+      arrTestIDDesc(j) = strTBuffer
+      j = j + 1
+    Wend
+
+    Close intTFileNum
+
+    'Store place in array of chosen item
+
+    intTResult% = SelectBox(g_Boe_strExperimentID, "Please choose a TestID:", arrTestIDDesc$)
+
+      
+    strTestIDtmp=arrTestIDDesc$(intTResult%)			'Extract line containing TestID and Description
+    strTestID = Mid$(strTestIDtmp, 1, 10)             'Extract TestID
+    strTestIDtrim = Trim$(strTestID$)                 'Trim leading and trailing spaces
+
+    If intTResult% = -1 then
+       GoTo Error_P
+    End If
+
+Passed_P:
+    Boe_GetTestID = strTestIDtrim
+    Exit Function
+Failed_P:
+    MsgBox "Boe_GetTestID failed"
+    Boe_GetTestID = ""
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Pre version v4 routines
+'        Keep for compatibility
+'''''''''''''''''''''''''''''
+
+
+[Desc_Boe_oldOpen]
+OverView:
+    Open and initialize package. The old indicates that this 
+    is the subroutine was the working version Boe_Open
+    before the 4.0 changes. 
+
+
+Parameters:
+    None.
+
+Remarks:
+    Assumes Boe, Boexml, and Boeni are available.
+
+[Sub_Boe_oldOpen]
+
+Sub Boe_oldOpen()
+    On Error GoTo Error_P
+
+    g_Boe_boolStop = False
+    GASN = 0
+    g_Boe_strBlockID = "not initialized"
+    GNUM = 0
+    BNUM = 0
+    BCNUM = 0
+    BSNUM = 0
+    SCNUM = 0
+    SSNUM = 0
+    
+    g_Boe_strExperimentID = ebContext.GetAttrib("Experiment")
+    g_Boe_strSessionID = g_Boe_strExperimentID
+
+    IF g_Boe_boolDebug Then
+	    If MsgBox("Do you wish to display debug messages?", ebYesNo, g_Boe_strExperimentID) = ebYes Then
+      	  g_Boe_boolDebug = True
+	    End If
+    End If
+
+    If g_Boe_boolUseNI Then
+        If Not Boeni_Open() Then
+            MsgBox "Boeni_Open failed."
+            'g_Boe_boolUseNI = False
+        End If
+    End If
+
+    If g_Boe_boolUseScan Then
+        If Not Boescan_Open( g_Boe_lngScanPortNum, g_Boe_lngScanBaudRate, _
+                 g_Boe_dblScanMaxScanPeriodSec) Then
+            MsgBox "Boescan_Open failed."
+            'g_Boe_boolUseScan = False
+        End If
+    End If
+    
+    g_Boexml_boolLog = True
+    If g_Boexml_boolLog Then
+        Do
+            g_Boe_strSubjectID = AskBox("Please enter the SubjectID:", "s1", g_Boe_strExperimentID)
+            If IsEmpty(g_Boe_strSubjectID) Then
+                g_Boe_strSubjectID = "NSID"
+                g_Boexml_boolLog = False
+                Exit Do
+            End If
+        
+            If g_Boexml_boolLog Then
+                g_Boe_strTestID = AskBox("Please enter the TestID:", "t1", g_Boe_strExperimentID)
+                If IsEmpty(g_Boe_strTestID) Then
+                    g_Boe_strTestID = "NTID"
+                    g_Boexml_boolLog = False
+                    Exit Do
+                End If
+            End If
+        
+            g_Boexml_strFilePath = g_Boe_strExperimentID & "_" & g_Boe_strSubjectID _
+                 & "_" & g_Boe_strTestID & ".xml"
+            
+            If FileExists(g_Boexml_strFilePath) Then
+                If MsgBox("Overwrite [" & g_Boexml_strFilePath & "] ?", ebYesNo, g_Boe_strExperimentID) = ebYes Then
+                    Kill g_Boexml_strFilePath
+                    Exit Do
+                End If
+            Else
+                Exit Do
+            End If
+        Loop
+    End If
+
+    If g_Boexml_boolLog Then
+        If Not Boexml_Open(g_Boexml_strFilePath) Then
+            MsgBox "Boexml_Open '" & g_Boexml_strFilePath & "' failed"
+            g_Boexml_boolLog = False
+        End If
+    End If
+    If Not g_Boexml_boolLog Then
+        MsgBox "No Boe data will be logged."
+    End If
+
+    'Boe_CalcRefreshRate
+
+    Boexml_LogCalInfo g_Boexml_intLevelSubSession
+    Boeni_StartDataAcq
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boe_Open failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Sub
+
+[InitPackages]
+
+
+
+[UnInitPackages]
+
+
+
+[Info_Boe]
+
+
+

@@ -1,0 +1,555 @@
+  
+' Boescan stuff for Dr. Barry Oken
+' Contact Roger Ellingson, Dan Zajdel, 503.297.5044, rogere@rmegen.net
+' unpublished copyright, 7/5/2002
+
+[Header]
+
+PackageName="Boescan"
+Description="Barry Oken ISCAN Support lib"
+VersionMajor=5
+VersionMinor=0
+VersionInternal=0
+VersionRevision=0
+
+[Global]
+
+''''''Begin Boescan.epk global''''''''''''''''''''''''''
+'''''''Meta Data Data Definitions ''''''''
+
+const Boescan_PackageName As String ="boescan.epk"
+const Boescan_PackageVersion As String ="5.0"
+const Boescan_PackageDate As String ="04/11/2005"
+const Boescan_PackageComments As String ="Boe Meta Data"
+
+'''''''''''''''''''''''''''''''''''''''''''
+
+
+'Boescan specific meta
+Public g_Boescan_PackageMetaElemObj as ElemObjType
+Declare Public sub Boescan_SetPackageMetaData()
+
+
+
+''''''''''''''''''''''''''''''''''''''''''''
+
+
+
+Declare Function BoescanDLL_Reset Lib "Boescan.dll" () As Long
+Declare Function BoescanDLL_Open Lib  "Boescan.dll" _
+    (ByVal lngPortNum As Long, ByVal lngBaudRate As Long, ByVal dblScanPeriodSecMax As double) As Long
+Declare Function BoescanDLL_Close Lib "Boescan.dll" () As Long
+Declare Function BoescanDLL_GetDataRaw Lib "Boescan.dll" _
+   (ByRef byteBuf As long, ByVal lngNumBytes As Long) As Long
+Declare Function BoescanDLL_GetDataEncodedBase64 Lib "Boescan.dll" _
+   (ByRef byteBuf As long, ByVal lngNumBytesRaw As Long, ByRef lngNumBytesEncoded As Long) As Long
+Declare Function BoescanDLL_SnagEncodeData Lib "Boescan.dll" _
+   (ByVal dblScanPeriodSec as double) as long
+Declare Function BoescanDLL_GetEncodedData Lib "Boescan.dll" _
+   (ByRef lngPtr as long, ByRef lngNumBytes As Long) As Long
+Declare Function BoescanDLL_SnagTextData Lib "Boescan.dll" _
+   (ByVal dblScanPeriodSec as double) as long
+Declare Function BoescanDLL_GetTextData Lib "Boescan.dll" _
+   (ByRef lngPtr as long, ByRef lngNumBytes As Long) As Long
+
+Declare Function BoescanDLL_SnagGetTextData Lib "Boescan.dll" _
+   (ByVal lngNumRawBytes as Long, ByVal strBuf as string, ByVal lngSize as long) as long
+
+Const g_Boescan_lngNumBytesPerScan = 8 ' Number bytes including 'DD' in ISCAN output stream scan
+Const g_Boescan_dblNumScansPerSec = 60#  ' Number of scans streamed out by ISCAN per second.
+Public g_Boescan_dblNumBytesPerSec as double
+
+public m_Boescan_boolSCANOK As Boolean ' true=ISCAN opened and functioning. false = not opened.
+Public g_Boescan_lngNumSerialPortRecBufBytes As Long ' number of serial port rec buffer bytes.
+
+Declare Public Function Boescan_Open(ByVal lngPort As Long, ByVal lngBaudRate As Long, ByVal dblMaxScanPeriodSec As Double) As Boolean
+Declare Public Function Boescan_Close() as boolean
+Declare Public Function Boescan_Reset() as boolean
+Declare Public Sub Boescan_GetScanParams( ByRef lngBytesPerScan as long, ByRef dblScansPerSec as double) 
+Declare Public Function Boescan_SnagEncodeData( ByVal dblScanPeriodSec as double) as Long
+Declare Public Function Boescan_GetEncodedData( ByRef lngDataBufPtr as long, ByRef lngNumBytes as long) as Long
+Declare Public Function Boescan_SnagTextData( ByVal dblScanPeriodSec as double) as Long
+Declare Public Function Boescan_GetTextData( ByRef lngDataBufPtr as long, ByRef lngNumBytes as long) as Long
+Declare Public Function Boescan_SnagGetTextData( ByVal dblScanPeriodSec as double, ByRef strBuf as string) as Long
+
+ '''''''' end Boescan.epk global ''''''''''''''''''''''''
+
+''''''''''''''''''''''''''''''''''''
+'Meta Data Related Code
+''''''''''''''''''''''''''''''''''''
+
+
+[Desc_Boescan_SetPackageMetaData]
+Overview:
+	
+Parameters:
+
+Remarks:
+
+[PreSub_Boescan_SetPackageMetaData]
+
+[Sub_Boescan_SetPackageMetaData]
+
+Sub Boescan_SetPackageMetaData()
+    On Error Goto Error_P
+
+    Dim lngAttribItem as long, lngAttribTot as long
+    Dim lngElemItem as long
+
+    
+    g_Boescan_PackageMetaElemObj.strName="PackageInfo"
+    g_Boescan_PackageMetaElemObj.boolAttrib=true
+
+    lngAttribItem=1
+    g_Boescan_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Name"
+    g_Boescan_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boescan_PackageName
+
+    lngAttribItem= lngAttribItem + 1
+    g_Boescan_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Version"
+    g_Boescan_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boescan_PackageVersion
+
+    lngAttribItem = lngAttribItem + 1
+    g_Boescan_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Date"
+    g_Boescan_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boescan_PackageDate
+
+    lngAttribItem = lngAttribItem + 1
+    g_Boescan_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Comments"
+    g_Boescan_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boescan_PackageComments
+
+   
+    lngAttribTot=lngAttribItem
+   
+    lngElemItem = g_Boe_lngBoeMetaElemObjN
+
+    Boe_SetElemObjItem lngAttribTot, g_Boescan_PackageMetaElemObj, _
+                          g_Boe_arrBoeMetaElemObj(lngElemItem)
+
+    g_Boe_lngBoeMetaElemObjN = g_Boe_lngBoeMetaElemObjN + 1
+
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boescan_SetPackageMetaData failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+
+End Sub
+
+
+''''''''''''''''''''''''''''''''''''
+'Boeni Specific Code
+''''''''''''''''''''''''''''''''''''
+
+[Desc_Boescan_Open]
+OverView:
+    Open the driver.
+
+Parameters:
+    lngPort As Long. Serial Comm port number, 1,2,3,...
+    dblMaxScanPeriodSec.  Maximum scan period that will be requested.
+
+Remarks:
+    ISCAN setup is 'uncalibrated' POR-H POR-V PUPIL digital output on serial port.
+    The ISCAN output byte stream is:
+        'DD000000' for these three outputs if POR and PUPIL is 0,0,0.
+    The ISCAN scan rate is 60/sec.
+    The serial stream rate is therefore numberOfSecs * 60scan/sec * 8 bytes/scan.
+    Set the lngNumRecBufBytes to the maximum length stream during a stimulus slide.
+    For a 30 sec stimulus, 30 * 60 * 8 = 14,400 bytes.
+
+
+[PreSub_Boescan_Open]
+
+[Sub_Boescan_Open]
+
+Public Function Boescan_Open(lngPort As Long, lngBaudRate As Long, _
+               dblMaxScanPeriodSec As Double) As Boolean
+    On Error GoTo Error_P
+
+    Dim strCaption As String
+
+    m_Boescan_boolSCANOK = False
+    g_boescan_dblNumBytesPerSec = CDbl(g_Boescan_lngNumBytesPerScan) * _
+                    g_boescan_dblNumScansPerSec
+              
+    If BoescanDLL_Open(lngPort, lngBaudRate, dblMaxScanPeriodSec) _
+                <> g_BOE_PASSED Then
+        GoTo Failed_P
+    End If
+
+    msgbox "Opened Comm" & CStr(lngPort) & " with " _
+      & CStr(dblMaxScanPeriodSec) & " sec scan buffer" _
+      & " at " & CStr(lngBaudRate) & "bps"
+
+Passed_P:
+    m_Boescan_boolSCANOK = True
+    Boescan_Open = True
+    Exit Function
+Failed_P:
+    Boescan_Open = False
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+[PostSub_Boescan_Open]
+
+'''''''''''''''''''''''''''''''''''''''''''''
+[Desc_Boescan_Close]
+OverView:
+    Closes the driver.
+
+Parameters:
+    None.
+
+Remarks:
+    None
+
+[PreSub_Boescan_Close]
+
+[Sub_Boescan_Close]
+
+Public Function Boescan_Close() As Boolean
+    On Error GoTo Error_P
+
+    If Not m_Boescan_boolSCANOK Then
+        GoTo Passed_P
+    End If
+
+    If BoescanDLL_Close() <> g_BOE_PASSED Then
+        GoTo Failed_P
+    End If
+    
+    m_Boescan_boolSCANOK = False
+
+Passed_P:
+    Boescan_Close = True
+    Exit Function
+Failed_P:
+    MsgBox "Boescan_Close failed"
+    Boescan_Close = False
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+[Post_Sub_Boescan_Close]
+
+'''''''''''''''''''''''''''''''''
+[Desc_Boescan_Reset]
+OverView:
+    Reset the serial port rec buffer by flushing out any stale data.
+
+Parameters:
+    None.
+    
+Remarks:
+    None.
+
+[Sub_Boescan_Reset]
+
+Function Boescan_Reset() As Boolean
+    On Error GoTo Error_P
+
+    If Not m_Boescan_boolSCANOK Then
+        GoTo Passed_P
+    End If
+
+    If BoescanDLL_Reset() <> g_BOE_PASSED Then
+        GoTo Failed_P
+    End If
+    
+Passed_P:
+    Boescan_Reset = True
+    Exit Function
+Failed_P:
+    Boescan_Reset = False
+    MsgBox "Boescan_Reset failed"
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+'''''''''''''''''''''''''''''''''''''''
+
+[Desc_Boescan_GetScanParams]
+OverView:
+    Grab the ISCAN scanpath stream parameters.
+
+Parameters:
+    lngBytesPerScan: Total number of bytes per scan, including 'DD's.
+    dblScansPerSec:  Number of scans per sec.
+
+Remarks:
+    Use to get the parameters of the scanning.
+
+[Sub_Boescan_GetScanParams]
+
+Sub Boescan_GetScanParams( ByRef lngBytesPerScan as long, ByRef dblScansPerSec As Double)
+    On Error GoTo Error_P
+   
+    If Not m_Boescan_boolSCANOK Then
+        GoTo Passed_P
+    End If
+
+    lngBytesPerScan = g_Boescan_lngNumBytesPerScan
+    dblScansPerSec = g_Boescan_dblNumScansPerSec 
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boescan_GetScanParams failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End sub
+
+'''''''''''''''''''''''''''''''''
+
+[Desc_Boescan_SnagEncodeData]
+OverView:
+    Grab the scanned raw data from the serial port and encode it into the encoded buffer.
+
+Parameters:
+    .
+
+Remarks:
+    The base64 encoded data from serial port is put into encoded buffer byte array.
+    Returns the number of bytes of valid encoded data.
+
+[Sub_Boescan_SnagEncodeData]
+
+Function Boescan_SnagEncodeData( dblScanPeriodSec As Double) As Long
+    On Error GoTo Error_P
+
+    Dim lngNumScans as long, lngNumScansReq as long
+
+    If Not m_Boescan_boolSCANOK Then
+        GoTo Passed_P
+    End If
+
+    lngNumScansReq = CLng( g_Boescan_dblNumScansPerSec * dblScanPeriodSec)
+
+    lngNumScans = BoescanDLL_SnagEncodeData( dblScanPeriodSec)
+    
+    If cdbl(lngNumScans) < lngNumScansReq Then
+        MsgBox "Boescan: Suspicious few scans returned"
+    End If
+
+msgbox "SnagEncode Period:" & CStr(dblScanPeriodSec) & " Scans:" & cstr(lngNumScans) 
+
+Passed_P:
+    Boescan_SnagEncodeData = lngNumScans
+    Exit Function
+Failed_P:
+    Boescan_SnagEncodeData = -1
+    MsgBox "Boescan_SnagEncodeData failed"
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+'''''''''''''''''''''''''''''''
+
+[Desc_Boescan_GetEncodedData]
+OverView:
+    Get a ptr to the encoded data and the number of bytes.
+
+Parameters:
+    None.
+
+Remarks:
+    Returns g_BOE_FAILED if pointer is null, else PASSED.
+
+[Sub_Boescan_GetEncodedData]
+
+Function Boescan_GetEncodedData( ByRef lngPtr as long, ByRef lngNumBytes as long) As Long
+    On Error GoTo Error_P
+
+    If Not m_Boescan_boolSCANOK Then
+        GoTo Passed_P
+    End If
+
+    if BoescanDLL_GetEncodedData( lngPtr, lngNumBytes) <> g_BOE_PASSED then
+        goto Failed_P
+    End If
+    
+    if lngPtr = 0 then
+        msgbox "Illegal encoded buffer ptr"
+        goto Failed_P 
+    End If
+    
+Passed_P:
+    Boescan_GetEncodedData = g_BOE_PASSED
+    Exit Function
+Failed_P:
+    Boescan_GetEncodedData = g_BOE_FAILED
+    MsgBox "Boescan_GetEncodedData failed"
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+
+'''''''''''''''''''''''''''''''''''''''
+
+[Desc_Boescan_SnagTextData]
+OverView:
+    Grab the scanned raw data from the serial port and encode it into the encoded buffer.
+
+Parameters:
+    .
+
+Remarks:
+    The Scan data is converted into ascii text and saved in an array in the dll.
+    Returns the number of scans of valid text data.
+
+[Sub_Boescan_SnagTextData]
+
+Function Boescan_SnagTextData( dblScanPeriodSec As Double) As Long
+    On Error GoTo Error_P
+
+    Dim lngNumScans as long, lngNumScansReq as long
+
+    If Not m_Boescan_boolSCANOK Then
+        GoTo Passed_P
+    End If
+
+    lngNumScansReq = CLng( g_Boescan_dblNumScansPerSec * dblScanPeriodSec)
+    
+    lngNumScans = BoescanDLL_SnagTextData( dblScanPeriodSec)
+    
+    If cdbl(lngNumScans) < lngNumScansReq Then
+        MsgBox "Boescan: Suspicious few scans returned"
+    End If
+
+    ' msgbox "SnagText Period:" & CStr(dblScanPeriodSec) & " Scans:" & cstr(lngNumScans) 
+
+Passed_P:
+    Boescan_SnagTextData = lngNumScans
+    Exit Function
+Failed_P:
+    Boescan_SnagTextData = -1
+    MsgBox "Boescan_SnagTextData failed"
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+'''''''''''''''''''''''''''''''
+
+[Desc_Boescan_GetTextData]
+OverView:
+    Get a ptr to the Text data and the number of bytes.
+
+Parameters:
+    None.
+
+Remarks:
+    Returns g_BOE_FAILED if pointer is null, else PASSED.
+
+[Sub_Boescan_GetTextData]
+
+Function Boescan_GetTextData( ByRef lngPtr as long, ByRef lngNumBytes as long) As Long
+    On Error GoTo Error_P
+
+    If Not m_Boescan_boolSCANOK Then
+        GoTo Passed_P
+    End If
+
+    if BoescanDLL_GetTextData( lngPtr, lngNumBytes) <> g_BOE_PASSED then
+        goto Failed_P
+    End If
+    
+    if lngPtr = 0 then
+        msgbox "Illegal Text buffer ptr"
+        goto Failed_P 
+    End If
+    
+Passed_P:
+    Boescan_GetTextData = g_BOE_PASSED
+    Exit Function
+Failed_P:
+    Boescan_GetTextData = g_BOE_FAILED
+    MsgBox "Boescan_GetTextData failed"
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+''''''''''''''''''''''''''''''''''''''''
+
+[Desc_Boescan_SnagGetTextData]
+OverView:
+    Grab the scanned raw data from the serial port and return values in text string.
+
+Parameters:
+    .
+
+Remarks:
+    The ISCAN values are put into previously declared string.
+    Format: XXX,XXX,XXX;XXX,XXX,XXX;.....
+    Returns the number of char of text data.
+
+[Sub_Boescan_SnagGetTextData]
+
+Function Boescan_SnagGetTextData( dblScanPeriodSec As Double, strBuf as string) As Long
+    On Error GoTo Error_P
+
+    Dim lngNumTextChar As Long
+    Dim lngNumBytesRaw as long, lngNumScans as long, lngSize as long
+
+    If Not m_Boescan_boolSCANOK Then
+        GoTo Passed_P
+    End If
+
+    lngNumBytesRaw = CLng( g_Boescan_dblNumBytesPerSec * dblScanPeriodSec)
+    
+    lngNumScans = lngNumBytesRaw / 8
+    lngSize = lngNumScans * 12
+
+    strBuf = Space$(lngSize)
+
+    lngNumTextChar = BoescanDLL_SnagGetTextData( lngNumBytesRaw, strBuf, lngSize)
+    
+    If lngNumTextChar < lngSize Then
+        MsgBox "Boescan: Suspicious few encoded char returned"
+    End If
+	
+msgbox "SnagGetTextData Period:" & CStr(dblScanPeriodSec) & " chars:" & cstr(lngSize)
+
+Passed_P:
+    Boescan_SnagGetTextData = lngNumTextChar
+    Exit Function
+Failed_P:
+    Boescan_SnagGetTextData = -1
+    MsgBox "Boescan_SnagGetTextData failed"
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+
+'-----------------------------------------
+[InitPackages]
+
+
+
+[UnInitPackages]
+
+
+[Info_Boescan]
+
+
+

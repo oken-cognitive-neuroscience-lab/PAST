@@ -1,0 +1,114 @@
+From: Beta [beta@pstnet.com]
+Sent: Monday, October 23, 2000 8:35 AM
+To: 'Daniel Zajdel'
+Subject: RE: 011211-EP100-2C4437220c .....PACKAGE CALL QUESTIONS
+
+Dear Dr. Zajdel:
+
+In answer to your questions re: package files:
+
+1.  Each Package file must be saved with the EPK extension and should exist
+in a unique subdirectory within the \E-Prime\Programs\Packages folder.  To
+call a Package file within E-Prime, it must be added to the experiment via
+the Packages tab in the Experiment Object Property Pages.  
+
+Here are the two concerns for using PackageCalls:
+-In any section where Property=Value, do not put spaces.
+	For example, use PackageName="MyPackageName" versus PackageName =
+"MyPackageName"
+-Once that is done, the Subroutine definition is not valid
+
+2. The most important thing to remember is that E-Studio ONLY loads the
+definitions for each package when it loads, which means that you should
+restart E-Prime to view newly added package files. A full reboot on the
+machine is not necessary.   Any edits to the .epk file require the author to
+close E-Studio and then reopen it.   Finally, any time you edit the .epk
+file, and it changes API (for example, GetMyStuff takes three params instead
+of 2), you must bump the VersionPersist so that E-Studio will handle
+prompting of upgrading properly.  
+No reboot, just shut down e-studio and restart
+
+3. If there is an error within the package, E-Prime continues not only with
+the current .epk file, but with the others as well
+
+4. Functions are valid within the "Global" portion of the .epk file, but
+there is no means in each of the Sub_??? calls that are defined.
+
+E-Prime does not require that you have more than one .epk file. Instead, you
+can have numerous amounts of Sub_??? routines in one .epk file that the
+PackageCall will call.  From a maintenance perspective, only one .epk file
+should be used if all the calls are related. 
+
+5.  After consulting with our developers on this issue, it has been
+concluded that there is not currently a way for a user to only setup a .dll
+call and call it directly from a PackageCall.  However, there is a way to
+call it from a package, as I have outlined below.  
+
+[Header]
+Library="MyExample"
+
+[Global]
+Declare Sub MyInit Lib "MyCode.dll" (ByVal strInit As String)
+
+[Sub_MyExample_MyInit]
+Public Sub MyExample_MyInit(strInit As String)
+	'Call the .dll function
+	Call MyInit strInit
+End Sub
+
+I hope this information is helpful.
+
+Sincerely,
+
+Sara Burgess
+Technical Consultant
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Psychology Software Tools, Inc.
+2050 Ardmore Blvd.
+Pittsburgh, PA 15221-4610
+USA
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Visit our Web Site for the latest info:
+http://www.pstnet.com
+E-mail: info@pstnet.com
+Voice (412) 271-5040
+Fax: (412) 271-7077
+
+
+-----Original Message-----
+From: Daniel Zajdel [mailto:zajdeld@ohsu.edu]
+Sent: Friday, October 20, 2000 2:31 PM
+To: Beta@pstnet.com
+Subject: 011211-EP100-2C4437220c .....PACKAGE CALL QUESTIONS
+
+
+Eprime Technical Support, Sarah Burgess-
+
+We are currently in the process of converting all our experiments to the
+Eprime
+platform, as well as upgrading existing experiments to the Beta 5.0 version.
+Hoping to take advantage of some new features, we are trying to make use of
+package calls, and have these questions:
+
+1. Where do the packages go?  Exactly what path should be used.
+
+2. Do I need to reboot to see them?  I do not see them when installing them
+from the exp. properties.  I have seen them in the past.
+
+3.  If there is an error in one package does eprime quit looking for other
+packages?  I want to have at least 4 packages in one exp.
+
+4. Are function type subroutines supported?  ( the ones that return values)
+Or are just sub type subroutines?
+
+5. What does the "dll" call information refer to in the packagecall
+reference documentation?  It sounds something like dll call subroutines are
+supported in someway by the packagecall interface mechanism.
+
+Thank you as always for your help, guidance, and suppport.
+
+Dan Zajdel, zajdeld@ohsu
+Oken Cognitive Neuroscience Lab
+Oregon Health Sciences University
+

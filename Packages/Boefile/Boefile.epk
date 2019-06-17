@@ -1,0 +1,232 @@
+'
+' Boefile stuff for Dr. Barry Oken
+' Contact Roger Ellingson, Dan Zajdel, 503.297.5044, rogere@rmegen.net
+' unpublished copyright, 2/15/2003
+
+'Boefile.epk depends on Boefile.dll being installed in the $WINDOWS directory
+
+[Header]
+PackageName="Boefile"
+Description="Barry Oken File Support lib"
+VersionMajor=5
+VersionMinor=0
+VersionInternal=0
+VersionRevision=1
+
+[Global]
+''''''Begin Boefile.epk global''''''''''''''''''''''''''
+
+'''''''Meta Data Data Definitions ''''''''
+
+const Boefile_PackageName As String ="boefile.epk"
+const Boefile_PackageVersion As String ="5.0"
+const Boefile_PackageDate As String ="04/15/2005"
+const Boefile_PackageComments As String ="Added some comments"
+
+'''''''''''''''''''''''''''''''''''''''''''
+'Boefile specific meta
+Public g_Boefile_PackageMetaElemObj as ElemObjType
+Declare Public sub Boefile_InitPackageMetaData()
+Declare Public sub Boefile_SetPackageMetaData()
+
+''''''''''''''''''''''''''''''''''''''''''''
+
+Declare Function BoefileDLL_WriteOutFile Lib _
+    "F:\\ad\\barry\\Boestuff\\Boefile\\Debug\\Boefile.dll" (ByVal lngFileNum as long, ByVal lpszText As String) As Long
+Declare Function BoefileDLL_WriteOutFileBytes Lib _
+    "F:\\ad\\barry\\Boestuff\\Boefile\\Debug\\Boefile.dll" (ByVal lngFileNum as long, ByVal lngBufPtr as long, ByVal lngNumBytes as long) As Long
+Declare Function BoefileDLL_WriteOutFileTaggedBytes  Lib _
+    "F:\\ad\\barry\\Boestuff\\Boefile\\Debug\\Boefile.dll" ( ByVal lngFileNum as long, ByVal lpszPre as string, _
+    ByVal lngBufPtr as long, ByVal lngNumBytes as long, ByVal lpszPost as string) as long
+Declare Function BoefileDLL_OpenOutFile Lib _
+    "F:\\ad\\barry\\Boestuff\\Boefile\\Debug\\Boefile.dll" (ByVal lngFileNum as long, ByVal lpszPath As String) As Long
+Declare Function BoefileDLL_CloseOutFile Lib _
+    "F:\\ad\\barry\\Boestuff\\Boefile\\Debug\\Boefile.dll" (ByVal lngFileNum as long) As Long
+Declare Function BoefileDLL_ReadOutFile Lib _
+    "F:\\ad\\barry\\Boestuff\\Boefile\\Debug\\Boefile.dll" (ByVal lngFileNum as long, ByVal bstr As String) As String
+
+Declare Public Function Boefile_OpenOutFile(ByVal lngFileNum as long, strPath As String) As Boolean
+Declare Public Function Boefile_CloseOutFile(ByVal lngFileNum as long) As Boolean
+Declare Public Function Boefile_WriteOutFile( Byval lngFileNum as long, ByVal lpszText as string) as boolean
+
+' one file for xml, one for scanpath, one for eeg
+
+Public m_Boefile_boolFILEOK(1 to 3) As Boolean  ' True=FILE is OK
+
+'''''''' end Boefile.epk global ''''''''''''''''''''''''
+
+''''''''''''''''''''''''''''''''''''
+'Meta Data Related Code
+''''''''''''''''''''''''''''''''''''
+
+[Desc_Boefile_SetPackageMetaData]
+Overview:
+	
+Parameters:
+
+Remarks:
+
+[Sub_Boefile_SetPackageMetaData]
+Sub Boefile_SetPackageMetaData()
+    On Error Goto Error_P
+
+    Dim lngAttribItem as long, lngAttribTot as long
+    Dim lngElemItem as long
+
+    
+    g_Boefile_PackageMetaElemObj.strName="PackageInfo"
+    g_Boefile_PackageMetaElemObj.boolAttrib=true
+
+    lngAttribItem=1
+    g_Boefile_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Name"
+    g_Boefile_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boefile_PackageName
+
+    lngAttribItem= lngAttribItem + 1
+    g_Boefile_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Version"
+    g_Boefile_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boefile_PackageVersion
+
+    lngAttribItem = lngAttribItem + 1
+    g_Boefile_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Date"
+    g_Boefile_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boefile_PackageDate
+
+    lngAttribItem = lngAttribItem + 1
+    g_Boefile_PackageMetaElemObj.arrAttribObj(lngAttribItem).strID="Comments"
+    g_Boefile_PackageMetaElemObj.arrAttribObj(lngAttribItem).strValue=Boefile_PackageComments
+
+   
+    lngAttribTot=lngAttribItem
+   
+    lngElemItem = g_Boexml_lngBoeMetaElemObjN
+
+    Boexml_SetElemObjItem lngAttribTot, g_Boefile_PackageMetaElemObj, _
+                          g_Boexml_arrBoeMetaElemObj(lngElemItem)
+
+
+    g_Boexml_lngBoeMetaElemObjN = g_Boexml_lngBoeMetaElemObjN + 1
+
+Passed_P:
+    Exit Sub
+Failed_P:
+    MsgBox "Boefile_SetPackageMetaData failed"
+    Exit Sub
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+
+End Sub
+''''''''''''''''''''''
+
+''''''''''''''''''''''''''''''''''''
+'Boefile Specific Code
+''''''''''''''''''''''''''''''''''''
+
+[Desc_Boefile_OpenOutFile]
+OverView:
+    Open the outfile.
+Parameters:
+    lngFileNum to open, strPath to open.
+Remarks:
+    None
+
+[Sub_Boefile_OpenOutFile]
+Public Function Boefile_OpenOutFile(lngFileNum as long, strPath As String) As Boolean
+    On Error GoTo Error_P
+
+    Dim strCaption As String
+
+    m_Boefile_boolFILEOK(lngFileNum) = False
+
+    If BoefileDLL_OpenOutFile(lngFileNum, strPath) <> g_BOE_PASSED Then
+        MsgBox "Boefile_Open: Unabled to open #" & cstr(lngFileNum) & " path:" & strPath
+        GoTo Failed_P
+    End If
+        
+Passed_P:
+    m_Boefile_boolFILEOK(lngFileNum) = True
+    Boefile_OpenOutFile= True
+    Exit Function
+Failed_P:
+    Boefile_OpenOutFile= False
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+'''''''''''''''''''''''''''''''''''''''''''''
+
+[Desc_Boefile_CloseOutFile]
+OverView:
+    Closes the file.
+Parameters:
+    lngFileNum as number of file to close.
+Remarks:
+    None
+
+[Sub_Boefile_CloseOutFile]
+Public Function Boefile_CloseOutFile( lngFileNum as long) As Boolean
+    On Error GoTo Error_P
+
+    If Not m_Boefile_boolFILEOK(lngFileNum) Then
+        GoTo Passed_P
+    End If
+
+    If BoefileDLL_CloseOutFile( lngFileNum) <> g_BOE_PASSED Then
+        GoTo Failed_P
+    End If
+
+    m_Boefile_boolFILEOK(lngFileNum) = False
+
+Passed_P:
+    Boefile_CloseOutFile = True
+    Exit Function
+Failed_P:
+    MsgBox "Boefile_CloseOutFile failed"
+    Boefile_CloseOutFile = False
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+'''''''''''''''''''''''''''''''''
+
+[Desc_Boefile_WriteOutFile]
+OverView:
+    Write the outfile.
+Parameters:
+    lngFileNum to open, strText to write.
+Remarks:
+    None
+
+[Sub_Boefile_WriteOutFile]
+Public Function Boefile_WriteOutFile(lngFileNum as long, strText As String) As Boolean
+    On Error GoTo Error_P
+
+    if not m_Boefile_boolFILEOK(lngFileNum) then
+	msgbox "Boefile_WriteOutFile:File not opened"
+	goto Failed_P
+    end if
+
+    If BoefileDLL_WriteOutFile(lngFileNum, strText) <> g_BOE_PASSED Then
+        MsgBox "Boefile_WriteOutFile: Unabled to write #" & cstr(lngFileNum)
+        GoTo Failed_P
+    End If
+        
+Passed_P:
+    Boefile_WriteOutFile= True
+    Exit Function
+Failed_P:
+    Boefile_WriteOutFile= False
+    Exit Function
+Error_P:
+    MsgBox Error
+    Resume Failed_P
+End Function
+'''''''''''''''''''''''''''''''''
+
+[InitPackages]
+
+[UnInitPackages]
+
+[Info_Boefile]
+
+
